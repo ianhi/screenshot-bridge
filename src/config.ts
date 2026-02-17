@@ -1,15 +1,14 @@
+import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-// Resolve paths relative to the project root (one level up from src/),
-// so data dir is stable regardless of the working directory the server is started from.
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(__dirname, "..");
+// Data lives in ~/.screenshot-bridge/ so it's stable regardless of how/where
+// the server is started, and survives reinstalls or version changes.
+const defaultDataDir = path.join(os.homedir(), ".screenshot-bridge", "data");
 
 export const config = {
   port: Number.parseInt(process.env.PORT || "3456", 10),
   host: process.env.HOST || "0.0.0.0",
-  dataDir: process.env.DATA_DIR || path.join(projectRoot, "data"),
+  dataDir: process.env.DATA_DIR || defaultDataDir,
 
   // Image compression cascade (see image.ts):
   // 1. Resize to maxImageDimension if larger
