@@ -1,33 +1,25 @@
 # Screenshot Bridge
 
-A web-based bridge that lets you paste screenshots in a browser and retrieve them in Claude Code via MCP. Designed for remote workflows where you're SSH'd into a desktop and can't paste images through the terminal.
+Claude Code is a terminal application. Terminals can't display images, and they can't receive paste events containing images. This creates two problems:
+
+1. **You can't show Claude what you're seeing.** UI bugs, design references, error dialogs, chart outputs — anything visual requires a way to get an image from your eyes to Claude's context window. If you're SSH'd into a remote machine, there's no clipboard path at all.
+
+2. **Claude can't show you what it's generated.** When Claude creates a visualization, chart, or diagram, it has no way to render it. The image data exists but there's no display surface in a terminal.
+
+Screenshot Bridge solves both directions. It runs a small web server that you open in a browser — paste screenshots in, and Claude retrieves them via MCP. Claude can also push images back to the browser, or execute Canvas drawing code in the browser and capture the result.
 
 ## Quick Start
 
 ```bash
-# Install dependencies
-npm install
-
-# Start the server
-npm run dev
-```
-
-The server starts on `http://0.0.0.0:3456`. Open it in your browser to paste screenshots.
-
-## Setup Guide
-
-### 1. Install and Run
-
-```bash
-git clone <this-repo>
+git clone https://github.com/ianhi/screenshot-bridge.git
 cd screenshot-bridge
 npm install
 npm run dev
 ```
 
-### 2. Configure Claude Code
+The server starts on `http://0.0.0.0:3456`. Open it in your browser.
 
-Add the MCP server to your Claude Code configuration. Copy `.mcp.json` to your project root, or add this to your existing `.mcp.json`:
+Add to your project's `.mcp.json`:
 
 ```json
 {
@@ -40,97 +32,122 @@ Add the MCP server to your Claude Code configuration. Copy `.mcp.json` to your p
 }
 ```
 
-If accessing over Tailscale or a different host, replace `localhost` with the appropriate hostname.
+Replace `localhost` with the appropriate hostname if accessing over Tailscale or a different network.
 
-### 3. Use It
+## Usage
 
-1. **Open the web UI** at `http://<your-host>:3456` in a browser on the machine where you can paste screenshots
-2. **Paste a screenshot** using `Ctrl+V`, drag-and-drop, or click to select a file
-3. **Add an optional prompt** describing what you want Claude to do with the image
-4. **Click Send** (or press Enter)
-5. **In Claude Code**, the screenshot is now available via the MCP tools
+### Sending Screenshots to Claude
 
-### 4. Retrieve Screenshots in Claude Code
+1. Open the web UI at `http://<host>:3456`
+2. Paste (`Ctrl/Cmd+V`), drag-and-drop, or click to select an image
+3. Optionally annotate with the markup toolbar (arrows, boxes, text labels, numbered pins)
+4. Add an optional text prompt for context
+5. Click Send (or press Enter)
 
-Claude Code has access to these MCP tools:
+In Claude Code, the screenshot is now available via MCP tools.
+
+### Annotation Tools
+
+The markup toolbar appears when you have an image loaded. Each tool has a keyboard shortcut shown on the button:
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| Move | `M` | Drag existing annotations to reposition them |
+| Arrow | `A` | Draw arrows to point at things |
+| Box | `B` | Draw dashed rectangles to highlight regions |
+| Text | `T` | Place text labels |
+| Pin | `P` | Drop numbered pins with optional notes |
+
+Press `Esc` to deselect the current tool. Hover over any annotation to reveal the delete handle.
+
+Annotations are serialized as structured text (coordinates, percentages, labels) and sent alongside the image so Claude understands spatial context even from the text alone.
+
+### Claude Sending Images Back
+
+Claude has two tools for pushing visual content to your browser:
+
+- **`send_image`** — Send a pre-existing image (data URL) to the browser. Useful for forwarding generated images or charts.
+- **`run_canvas`** — Send JavaScript code to execute on an HTML Canvas in the browser. The code has access to `canvas` and `ctx` (2D rendering context). The rendered result is captured as a PNG and stored. Useful for programmatic visualizations, diagrams, and charts without needing any image generation library.
+
+Images from Claude appear in the history with an "agent" badge.
+
+## MCP Tools
 
 | Tool | Description |
 |------|-------------|
-| `get_pending_screenshots` | Fetches all undelivered screenshots (images + prompt) and marks them delivered. If a screenshot already has a description, returns the text instead of the image to save context. |
-| `get_screenshot` | Fetches a specific screenshot by ID with full image data. |
-| `list_screenshots` | Lists all screenshots with metadata, git context, and descriptions (no image data). |
-| `search_screenshots` | Filter by git branch, commit hash, time range, or delivery status. |
-| `describe_screenshot` | Save a text description for a screenshot. Cached descriptions replace image data in future retrievals. |
+| `get_pending_screenshots` | Fetch undelivered screenshots (images + prompts), mark them delivered. Returns cached descriptions instead of images when available. Supports `include_images: false` for metadata only. |
+| `get_screenshot` | Fetch a specific screenshot by ID with full image data. |
+| `list_screenshots` | List all screenshots with metadata (no image data). |
+| `search_screenshots` | Filter by git branch, commit, time range, or delivery status. |
+| `describe_screenshot` | Cache a text description for a screenshot. Future retrievals return text instead of image data. |
+| `send_image` | Push an image to the browser UI. |
+| `run_canvas` | Execute JS on a browser Canvas and capture the result (10s timeout). |
 
-### 5. Context-Efficient Usage
+### Context-Efficient Workflow
 
-Screenshots consume significant context window space. For best results:
+Screenshots are large. A single image can consume a significant portion of Claude's context window. To keep conversations lean:
 
-1. **Use a subagent** to analyze screenshots. Delegate image analysis to a subagent (via the Task tool) that describes the content back as text. This keeps your main conversation lean.
-2. **Save descriptions** after analyzing an image with `describe_screenshot`. The next time `get_pending_screenshots` encounters a described image, it returns the text description instead of the raw image, saving context.
-3. **Use `list_screenshots` first** to check what's pending before fetching full image data.
-4. **Include descriptive prompts** when pasting screenshots so Claude has text context even before viewing the image.
-5. **Edit descriptions** in the browser UI by clicking on the description text under any screenshot in the history.
+1. **Delegate to a subagent.** Use Claude Code's Task tool to spawn an agent that fetches and analyzes the screenshot, calls `describe_screenshot` to cache a text summary, and returns the description. The main conversation never sees the raw image bytes.
+2. **Use `list_screenshots` first** to check what's available before pulling full image data.
+3. **Write descriptive prompts** when pasting, so Claude has text context before even viewing the image.
+4. **Edit descriptions** in the browser by clicking the description text under any history item.
 
-Example workflow in Claude Code:
+## Multi-Project Support
+
+Screenshots are scoped by project. Each project gets isolated storage and MCP tool results.
+
+To scope an MCP session to a project, add `?project=<name>` to the URL:
+
+```json
+{
+  "mcpServers": {
+    "screenshot-bridge": {
+      "type": "http",
+      "url": "http://localhost:3456/mcp?project=my-project"
+    }
+  }
+}
 ```
-User: Check the screenshot bridge for new screenshots and describe what you see
 
-Claude: I'll use a subagent to analyze the pending screenshots...
-[Uses Task tool to spawn an agent that calls get_pending_screenshots,
- analyzes the image, calls describe_screenshot to cache the description,
- and returns a text summary]
-```
+The browser UI shows project tabs when more than one project exists.
 
-### 6. Git Integration
+## Git Integration
 
-When the server runs inside a git repository, it automatically records the current branch and commit hash with each screenshot. This lets you:
-
-- **Filter by branch**: `search_screenshots` with `branch: "feature/my-branch"`
-- **Filter by commit**: `search_screenshots` with `commit: "abc1234"`
-- **Filter by time**: `search_screenshots` with `since: "2024-01-15T00:00:00Z"`
-- **Combine filters**: Find all pending screenshots on a specific branch
-
-Git context (branch name and short commit hash) is also shown in the browser UI as purple badges.
+When the server runs inside a git repository, it records the current branch and commit hash with each screenshot. Use `search_screenshots` to filter by `branch`, `commit`, `since`, or `until`. Git context appears as badges in the browser UI.
 
 ## Configuration
-
-Environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3456` | HTTP server port |
 | `HOST` | `0.0.0.0` | Bind address |
-| `DATA_DIR` | `data` | Directory for persisted screenshots |
-
-## Architecture
-
-Single Node.js process serving:
-- **Web UI** -- Static HTML/CSS/JS frontend for pasting screenshots
-- **REST API** -- CRUD operations for screenshots (`/api/screenshots`)
-- **MCP Server** -- Streamable HTTP transport on `/mcp` with 5 tools
-- **WebSocket** -- Real-time status updates to the browser
-
-Screenshots are stored in-memory with disk backup in the `data/` directory. Images are automatically resized and compressed to JPEG (max 750KB base64) to stay within MCP's content limits.
-
-## API Reference
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/screenshots` | Upload screenshot (`{ dataUrl, prompt }`) |
-| `GET` | `/api/screenshots` | List all (metadata only) |
-| `GET` | `/api/screenshots/:id/image` | Get image binary |
-| `PATCH` | `/api/screenshots/:id` | Update description (`{ description }`) |
-| `DELETE` | `/api/screenshots/:id` | Delete one |
-| `DELETE` | `/api/screenshots` | Clear all |
-| `GET` | `/api/health` | Health check |
-| `POST` | `/mcp` | MCP Streamable HTTP endpoint |
+| `DATA_DIR` | `~/.screenshot-bridge/data` | Persistent storage directory |
 
 ## Development
 
 ```bash
-npm run dev      # Start with tsx (auto-reload)
+npm run dev      # Start with tsx
 npm run build    # Compile TypeScript
 npm run lint     # Biome check
 npm run format   # Biome format
 ```
+
+### Architecture
+
+Single Node.js process: Express 5 (static files + REST API) + MCP (Streamable HTTP on `/mcp`) + WebSocket (real-time updates + canvas execution).
+
+Images are automatically resized and compressed to JPEG (max 750KB base64) to stay within MCP's 1MB content limit.
+
+### API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/screenshots` | Upload (`{ dataUrl, prompt, annotations }`) |
+| `GET` | `/api/screenshots` | List all (metadata only) |
+| `GET` | `/api/screenshots/:id/image` | Image binary |
+| `PATCH` | `/api/screenshots/:id` | Update description |
+| `DELETE` | `/api/screenshots/:id` | Delete one |
+| `DELETE` | `/api/screenshots` | Clear all |
+| `GET` | `/api/projects` | List project names |
+| `GET` | `/api/health` | Health check |
+| `POST` | `/mcp` | MCP Streamable HTTP |
