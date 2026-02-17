@@ -17,6 +17,10 @@
   const toastContainer = $id("toastContainer");
   const projectTabs = $id("projectTabs");
   const projectTabsInner = $id("projectTabsInner");
+  const lightbox = $id("lightbox");
+  const lightboxImg = $id("lightboxImg");
+  const lightboxCaption = $id("lightboxCaption");
+  const lightboxClose = $id("lightboxClose");
   const markupContainer = $id("markupContainer");
   const markupOverlay = $id("markupOverlay");
   const markupToolbar = $id("markupToolbar");
@@ -259,6 +263,10 @@
     img.src = `/api/screenshots/${encodeURIComponent(item.id)}/image`;
     img.alt = "";
     img.loading = "lazy";
+    img.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openLightbox(item.id, item.prompt || item.description || "");
+    });
     div.appendChild(img);
 
     // Info section
@@ -537,6 +545,29 @@
         break;
     }
   }
+
+  // ─── Lightbox ───
+
+  function openLightbox(id, caption) {
+    lightboxImg.src = `/api/screenshots/${encodeURIComponent(id)}/image`;
+    lightboxCaption.textContent = caption || "";
+    lightbox.hidden = false;
+  }
+
+  function closeLightbox() {
+    lightbox.hidden = true;
+    lightboxImg.src = "";
+  }
+
+  lightboxClose.addEventListener("click", closeLightbox);
+  lightbox
+    .querySelector(".lightbox-backdrop")
+    .addEventListener("click", closeLightbox);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !lightbox.hidden) {
+      closeLightbox();
+    }
+  });
 
   // ─── Markup Toolbar ───
 

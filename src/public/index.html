@@ -111,6 +111,19 @@
     </main>
   </div>
 
+  <div class="lightbox" id="lightbox" hidden>
+    <div class="lightbox-backdrop"></div>
+    <div class="lightbox-content">
+      <img class="lightbox-img" id="lightboxImg" alt="">
+      <div class="lightbox-caption" id="lightboxCaption"></div>
+      <button class="lightbox-close" id="lightboxClose" title="Close (Esc)">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M5 5l10 10M15 5l-10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
   <div class="toast-container" id="toastContainer"></div>
   <script src="markup.js"></script>
   <script src="app.js"></script>
