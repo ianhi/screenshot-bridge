@@ -5,6 +5,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import type { Request, Response } from "express";
 import * as z from "zod/v4";
 import {
+  filterScreenshots,
   getPending,
   getScreenshot,
   listScreenshots,
@@ -144,10 +145,14 @@ function createServer(): McpServer {
       }
 
       const text = items
-        .map(
-          (s) =>
-            `- [${s.status}] ${s.id} (${s.createdAt})${s.prompt ? ` prompt: "${s.prompt}"` : ""}${s.description ? ` description: "${s.description}"` : ""}`,
-        )
+        .map((s) => {
+          let line = `- [${s.status}] ${s.id} (${s.createdAt})`;
+          if (s.git?.branch) line += ` branch:${s.git.branch}`;
+          if (s.git?.commitShort) line += ` commit:${s.git.commitShort}`;
+          if (s.prompt) line += ` prompt: "${s.prompt}"`;
+          if (s.description) line += ` description: "${s.description}"`;
+          return line;
+        })
         .join("\n");
 
       return {
@@ -155,6 +160,67 @@ function createServer(): McpServer {
           {
             type: "text" as const,
             text: `${items.length} screenshot(s):\n${text}`,
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    "search_screenshots",
+    {
+      title: "Search Screenshots",
+      description:
+        "Filter screenshots by git branch, commit, time range, or status. Returns metadata (no image data). Useful for finding screenshots from a specific branch or time period.",
+      inputSchema: z.object({
+        branch: z.string().optional().describe("Filter by git branch name"),
+        commit: z
+          .string()
+          .optional()
+          .describe("Filter by commit hash (full or short)"),
+        since: z
+          .string()
+          .optional()
+          .describe("Only screenshots after this ISO timestamp"),
+        until: z
+          .string()
+          .optional()
+          .describe("Only screenshots before this ISO timestamp"),
+        status: z
+          .enum(["pending", "delivered"])
+          .optional()
+          .describe("Filter by delivery status"),
+      }),
+    },
+    async (opts) => {
+      const items = filterScreenshots(opts);
+      if (items.length === 0) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "No screenshots match the given filters.",
+            },
+          ],
+        };
+      }
+
+      const text = items
+        .map((s) => {
+          let line = `- [${s.status}] ${s.id} (${s.createdAt})`;
+          if (s.git?.branch) line += ` branch:${s.git.branch}`;
+          if (s.git?.commitShort) line += ` commit:${s.git.commitShort}`;
+          if (s.prompt) line += ` prompt: "${s.prompt}"`;
+          if (s.description) line += ` description: "${s.description}"`;
+          return line;
+        })
+        .join("\n");
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `${items.length} matching screenshot(s):\n${text}`,
           },
         ],
       };

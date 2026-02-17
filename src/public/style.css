@@ -444,6 +444,16 @@ body {
   background: var(--green-dim);
 }
 
+.badge-git {
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.14);
+  font-weight: 500;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .history-prompt {
   font-size: 12px;
   color: var(--text-muted);

@@ -212,6 +212,16 @@
     time.textContent = formatTime(item.createdAt);
     meta.appendChild(time);
 
+    if (item.git?.branch) {
+      const gitBadge = document.createElement("span");
+      gitBadge.className = "badge badge-git";
+      gitBadge.textContent = item.git.branch;
+      gitBadge.title = item.git.commit
+        ? `${item.git.branch} @ ${item.git.commitShort}`
+        : item.git.branch;
+      meta.appendChild(gitBadge);
+    }
+
     info.appendChild(meta);
 
     if (item.prompt) {
