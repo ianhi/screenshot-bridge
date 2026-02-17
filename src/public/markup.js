@@ -16,6 +16,11 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
   let pinCounter = 0;
   let dragState = null;
 
+  // Undo/Redo stacks
+  // Actions: { action: "add"|"remove"|"move", ann, dataBefore?, dataAfter? }
+  const undoStack = [];
+  const redoStack = [];
+
   // Arrowhead marker definition
   const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
   const marker = document.createElementNS(
@@ -87,13 +92,17 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
     return g;
   }
 
-  function removeAnnotation(ann) {
+  function removeAnnotation(ann, skipUndo) {
     const idx = annotations.indexOf(ann);
     if (idx !== -1) annotations.splice(idx, 1);
     ann.el.remove();
     // Clean up any associated popover
     const pop = container.querySelector(".markup-pin-popover");
     if (pop) pop.remove();
+    if (!skipUndo) {
+      undoStack.push({ action: "remove", ann, data: { ...ann.data } });
+      redoStack.length = 0;
+    }
   }
 
   // ─── Arrow ───
@@ -134,6 +143,8 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
     group.appendChild(del);
     const ann = { type: "arrow", el: group, data: { x1, y1, x2, y2 } };
     annotations.push(ann);
+    undoStack.push({ action: "add", ann });
+    redoStack.length = 0;
     del.addEventListener("click", (e) => {
       e.stopPropagation();
       removeAnnotation(ann);
@@ -192,6 +203,8 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
       data: { x1: bx1, y1: by1, x2: bx2, y2: by2 },
     };
     annotations.push(ann);
+    undoStack.push({ action: "add", ann });
+    redoStack.length = 0;
     del.addEventListener("click", (e) => {
       e.stopPropagation();
       removeAnnotation(ann);
@@ -252,6 +265,8 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
         data: { x: coords.x, y: coords.y, label },
       };
       annotations.push(ann);
+      undoStack.push({ action: "add", ann });
+      redoStack.length = 0;
       del.addEventListener("click", (e) => {
         e.stopPropagation();
         removeAnnotation(ann);
@@ -307,6 +322,8 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
       data: { x: coords.x, y: coords.y, num, note: "" },
     };
     annotations.push(ann);
+    undoStack.push({ action: "add", ann });
+    redoStack.length = 0;
     del.addEventListener("click", (e) => {
       e.stopPropagation();
       removeAnnotation(ann);
@@ -399,6 +416,16 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
 
   function endMove() {
     if (!dragState || dragState.type !== "move") return;
+    const { ann, origData } = dragState;
+    // Only push if position actually changed
+    const dataAfter = { ...ann.data };
+    const changed = Object.keys(origData).some(
+      (k) => origData[k] !== dataAfter[k],
+    );
+    if (changed) {
+      undoStack.push({ action: "move", ann, dataBefore: origData, dataAfter });
+      redoStack.length = 0;
+    }
     dragState = null;
   }
 
@@ -524,6 +551,8 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
     }
     annotations.length = 0;
     pinCounter = 0;
+    undoStack.length = 0;
+    redoStack.length = 0;
     // Remove any popovers/inputs
     for (const el of container.querySelectorAll(
       ".markup-text-input, .markup-pin-popover",
@@ -587,8 +616,109 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
     return activeTool;
   }
 
+  function renderAnnotation(ann) {
+    // Re-render an annotation's SVG elements from its data
+    switch (ann.type) {
+      case "arrow": {
+        const line = ann.el.querySelector(".annotation-arrow");
+        line.setAttribute("x1", ann.data.x1);
+        line.setAttribute("y1", ann.data.y1);
+        line.setAttribute("x2", ann.data.x2);
+        line.setAttribute("y2", ann.data.y2);
+        repositionDeleteHandle(ann.el, ann.data.x1, ann.data.y1);
+        break;
+      }
+      case "box": {
+        const rect = ann.el.querySelector(".annotation-box");
+        rect.setAttribute("x", Math.min(ann.data.x1, ann.data.x2));
+        rect.setAttribute("y", Math.min(ann.data.y1, ann.data.y2));
+        rect.setAttribute("width", Math.abs(ann.data.x2 - ann.data.x1));
+        rect.setAttribute("height", Math.abs(ann.data.y2 - ann.data.y1));
+        repositionDeleteHandle(
+          ann.el,
+          Math.min(ann.data.x1, ann.data.x2),
+          Math.min(ann.data.y1, ann.data.y2),
+        );
+        break;
+      }
+      case "text": {
+        const text = ann.el.querySelector(".annotation-text");
+        text.setAttribute("x", ann.data.x);
+        text.setAttribute("y", ann.data.y);
+        repositionDeleteHandle(ann.el, ann.data.x, ann.data.y - 18);
+        break;
+      }
+      case "pin": {
+        const circle = ann.el.querySelector(".annotation-pin");
+        circle.setAttribute("cx", ann.data.x);
+        circle.setAttribute("cy", ann.data.y);
+        const label = ann.el.querySelector(".annotation-pin-label");
+        label.setAttribute("x", ann.data.x);
+        label.setAttribute("y", ann.data.y);
+        repositionDeleteHandle(ann.el, ann.data.x + 14, ann.data.y - 14);
+        break;
+      }
+    }
+  }
+
+  function undo() {
+    if (undoStack.length === 0) return;
+    const entry = undoStack.pop();
+    switch (entry.action) {
+      case "add":
+        // Undo add → remove the annotation
+        removeAnnotation(entry.ann, true);
+        redoStack.push(entry);
+        break;
+      case "remove":
+        // Undo remove → re-insert the annotation
+        annotations.push(entry.ann);
+        svg.appendChild(entry.ann.el);
+        redoStack.push(entry);
+        break;
+      case "move":
+        // Undo move → restore dataBefore
+        Object.assign(entry.ann.data, entry.dataBefore);
+        renderAnnotation(entry.ann);
+        redoStack.push(entry);
+        break;
+    }
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return;
+    const entry = redoStack.pop();
+    switch (entry.action) {
+      case "add":
+        // Redo add → re-insert the annotation
+        annotations.push(entry.ann);
+        svg.appendChild(entry.ann.el);
+        undoStack.push(entry);
+        break;
+      case "remove":
+        // Redo remove → remove it again
+        removeAnnotation(entry.ann, true);
+        undoStack.push(entry);
+        break;
+      case "move":
+        // Redo move → restore dataAfter
+        Object.assign(entry.ann.data, entry.dataAfter);
+        renderAnnotation(entry.ann);
+        undoStack.push(entry);
+        break;
+    }
+  }
+
   // Reposition on window resize
   window.addEventListener("resize", positionOverlay);
 
-  return { serialize, clear, setTool, attachToImage, getActiveTool };
+  return {
+    serialize,
+    clear,
+    setTool,
+    attachToImage,
+    getActiveTool,
+    undo,
+    redo,
+  };
 };

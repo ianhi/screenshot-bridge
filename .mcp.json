@@ -2,7 +2,12 @@
   "mcpServers": {
     "screenshot-bridge": {
       "type": "http",
-      "url": "http://localhost:3456/mcp"
+      "url": "http://localhost:3456/mcp",
+      "start": {
+        "command": "npm",
+        "args": ["run", "dev"],
+        "cwd": "/home/claude/dev/screenshot-bridge"
+      }
     }
   }
 }

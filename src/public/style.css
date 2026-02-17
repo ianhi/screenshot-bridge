@@ -245,6 +245,27 @@ body {
   color: var(--text-dim);
 }
 
+.btn-clipboard {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  margin-top: 4px;
+  font: 12px var(--font);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-clipboard:hover {
+  color: var(--text);
+  border-color: var(--border-focus);
+  background: var(--bg-hover);
+}
+
 /* ─── Preview ─── */
 
 .preview {

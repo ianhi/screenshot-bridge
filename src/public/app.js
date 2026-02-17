@@ -26,6 +26,7 @@
   const markupToolbar = $id("markupToolbar");
   const markupClearBtn = $id("markupClearBtn");
   const micBtn = $id("micBtn");
+  const clipboardBtn = $id("clipboardBtn");
 
   let currentDataUrl = null;
   let markup = null;
@@ -552,30 +553,37 @@
         break;
 
       case "canvas:execute": {
-        // Local dev tool: intentional dynamic code execution for agent-driven canvas rendering
+        // Local dev tool: intentional dynamic code execution for agent-driven canvas rendering.
+        // Wrapped in async IIFE so agent code can use await, fetch(), load images, etc.
         const { requestId, code, width, height } = data;
-        try {
-          const offscreen = document.createElement("canvas");
-          offscreen.width = width || 800;
-          offscreen.height = height || 600;
-          const ctx = offscreen.getContext("2d");
-          const render = new Function("canvas", "ctx", code); // eslint-disable-line no-new-func
-          render(offscreen, ctx);
-          const dataUrl = offscreen.toDataURL("image/png");
-          ws.send(
-            JSON.stringify({
-              event: "canvas:result",
-              data: { requestId, dataUrl },
-            }),
-          );
-        } catch (err) {
-          ws.send(
-            JSON.stringify({
-              event: "canvas:result",
-              data: { requestId, error: err.message },
-            }),
-          );
-        }
+        (async () => {
+          try {
+            const offscreen = document.createElement("canvas");
+            offscreen.width = width || 800;
+            offscreen.height = height || 600;
+            const ctx = offscreen.getContext("2d");
+            const render = new Function(
+              "canvas",
+              "ctx",
+              `return (async () => { ${code} })();`,
+            );
+            await render(offscreen, ctx);
+            const dataUrl = offscreen.toDataURL("image/png");
+            ws.send(
+              JSON.stringify({
+                event: "canvas:result",
+                data: { requestId, dataUrl },
+              }),
+            );
+          } catch (err) {
+            ws.send(
+              JSON.stringify({
+                event: "canvas:result",
+                data: { requestId, error: err.message },
+              }),
+            );
+          }
+        })();
         break;
       }
     }
@@ -636,6 +644,23 @@
     if (document.activeElement === promptInput) return;
     if (document.activeElement?.tagName === "INPUT") return;
 
+    // Undo/Redo
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.key.toLowerCase() === "z" && !e.shiftKey) {
+      e.preventDefault();
+      markup.undo();
+      return;
+    }
+    if (
+      mod &&
+      ((e.key.toLowerCase() === "z" && e.shiftKey) ||
+        e.key.toLowerCase() === "y")
+    ) {
+      e.preventDefault();
+      markup.redo();
+      return;
+    }
+
     const key = e.key.toLowerCase();
     const toolMap = { m: "move", a: "arrow", b: "box", t: "text", p: "pin" };
     if (toolMap[key]) {
@@ -649,6 +674,35 @@
       updateToolbarButtons();
     }
   });
+
+  // ─── Clipboard Read ───
+
+  if (navigator.clipboard?.read) {
+    clipboardBtn.hidden = false;
+    clipboardBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imageType = item.types.find((t) => t.startsWith("image/"));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            const reader = new FileReader();
+            reader.onload = (ev) => handleImageData(ev.target.result);
+            reader.readAsDataURL(blob);
+            return;
+          }
+        }
+        toast("No image found in clipboard", "error");
+      } catch (err) {
+        if (err.name === "NotAllowedError") {
+          toast("Clipboard access denied — allow in browser settings", "error");
+        } else {
+          toast(`Clipboard read failed: ${err.message}`, "error");
+        }
+      }
+    });
+  }
 
   // ─── Voice Input ───
 
