@@ -57,6 +57,7 @@ apiRouter.post("/screenshots", async (req, res) => {
       status: screenshot.status,
       prompt: screenshot.prompt,
       createdAt: screenshot.createdAt,
+      source: screenshot.source,
       project: projectId,
     });
 

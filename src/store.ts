@@ -17,6 +17,7 @@ export interface Screenshot {
   imageBase64: string;
   mimeType: string;
   status: "pending" | "delivered";
+  source: "user" | "agent";
   createdAt: string;
   deliveredAt: string | null;
   git: GitContext | null;
@@ -122,6 +123,7 @@ export function loadFromDisk(): void {
         );
         data.projectId = projectId;
         if (data.annotations === undefined) data.annotations = null;
+        if (data.source === undefined) data.source = "user";
         screenshots.set(data.id, data);
         knownProjects.add(projectId);
         total++;
@@ -142,8 +144,11 @@ export function addScreenshot(
   mimeType: string,
   prompt: string,
   annotations?: string | null,
+  source: "user" | "agent" = "user",
 ): Screenshot {
   const gitCtx = getGitContext();
+  const now = new Date().toISOString();
+  const isAgent = source === "agent";
   const s: Screenshot = {
     id: randomUUID(),
     projectId,
@@ -152,9 +157,10 @@ export function addScreenshot(
     annotations: annotations || null,
     imageBase64,
     mimeType,
-    status: "pending",
-    createdAt: new Date().toISOString(),
-    deliveredAt: null,
+    status: isAgent ? "delivered" : "pending",
+    source,
+    createdAt: now,
+    deliveredAt: isAgent ? now : null,
     git: gitCtx.branch || gitCtx.commit ? gitCtx : null,
   };
   screenshots.set(s.id, s);
@@ -178,7 +184,12 @@ export function listScreenshots(
 
 export function getPending(projectId: string): Screenshot[] {
   return [...screenshots.values()]
-    .filter((s) => s.projectId === projectId && s.status === "pending")
+    .filter(
+      (s) =>
+        s.projectId === projectId &&
+        s.status === "pending" &&
+        s.source === "user",
+    )
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 

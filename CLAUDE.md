@@ -51,13 +51,14 @@ In each project's `.mcp.json`:
 
 ## MCP Tools
 
-5 tools registered per session, all auto-scoped to the session's project:
+6 tools registered per session, all auto-scoped to the session's project:
 
-- `get_pending_screenshots` -- returns undelivered screenshots as image content, marks them delivered
+- `get_pending_screenshots` -- returns undelivered screenshots as image content, marks them delivered (excludes agent-sent images)
 - `get_screenshot` -- retrieve a specific screenshot by ID (includes image data)
-- `list_screenshots` -- list all screenshots with metadata (no image data)
-- `search_screenshots` -- filter by git branch, commit, time range, or status
+- `list_screenshots` -- list all screenshots with metadata (no image data); agent-sent images show `[agent]` marker
+- `search_screenshots` -- filter by git branch, commit, time range, or status; agent-sent images show `[agent]` marker
 - `describe_screenshot` -- save a text description for a screenshot (cached so subsequent `get_pending_screenshots` calls return text instead of image data, saving context window)
+- `send_image` -- send an image (data URL) to the browser UI for the user to see; supports optional caption and description; images appear with "agent" badge
 
 ## REST API
 

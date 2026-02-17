@@ -269,8 +269,13 @@
     meta.className = "history-meta";
 
     const badge = document.createElement("span");
-    badge.className = `badge badge-${item.status}`;
-    badge.textContent = item.status;
+    if (item.source === "agent") {
+      badge.className = "badge badge-agent";
+      badge.textContent = "agent";
+    } else {
+      badge.className = `badge badge-${item.status}`;
+      badge.textContent = item.status;
+    }
     meta.appendChild(badge);
 
     const time = document.createElement("span");
@@ -472,6 +477,9 @@
         addProject(eventProject);
         if (eventProject === currentProject) {
           loadHistory();
+        }
+        if (data.source === "agent") {
+          toast("Agent sent an image");
         }
         break;
 

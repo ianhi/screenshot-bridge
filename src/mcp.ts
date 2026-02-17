@@ -4,10 +4,13 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import type { Request, Response } from "express";
 import * as z from "zod/v4";
+import { processImage } from "./image.js";
 import {
+  addScreenshot,
   filterScreenshots,
   getPending,
   getScreenshot,
+  isNewProject,
   listScreenshots,
   markDelivered,
   setDescription,
@@ -173,6 +176,7 @@ function createServer(projectId: string): McpServer {
       const text = items
         .map((s) => {
           let line = `- [${s.status}] ${s.id} (${s.createdAt})`;
+          if (s.source === "agent") line += " [agent]";
           if (s.git?.branch) line += ` branch:${s.git.branch}`;
           if (s.git?.commitShort) line += ` commit:${s.git.commitShort}`;
           if (s.prompt) line += ` prompt: "${s.prompt}"`;
@@ -235,6 +239,7 @@ function createServer(projectId: string): McpServer {
       const text = items
         .map((s) => {
           let line = `- [${s.status}] ${s.id} (${s.createdAt})`;
+          if (s.source === "agent") line += " [agent]";
           if (s.git?.branch) line += ` branch:${s.git.branch}`;
           if (s.git?.commitShort) line += ` commit:${s.git.commitShort}`;
           if (s.prompt) line += ` prompt: "${s.prompt}"`;
@@ -291,6 +296,77 @@ function createServer(projectId: string): McpServer {
           },
         ],
       };
+    },
+  );
+
+  server.registerTool(
+    "send_image",
+    {
+      title: "Send Image to Browser",
+      description:
+        "Send an image to the screenshot-bridge browser UI for the user to see. Useful for sharing generated charts, diagrams, annotated images, or any visual content. The image appears in the browser's history list with an 'agent' badge.",
+      inputSchema: z.object({
+        image: z
+          .string()
+          .describe("Image as a data URL (e.g. data:image/png;base64,...)"),
+        caption: z
+          .string()
+          .optional()
+          .describe("Short caption shown as the prompt text"),
+        description: z
+          .string()
+          .optional()
+          .describe("Detailed description of the image content"),
+      }),
+    },
+    async ({ image, caption, description }) => {
+      try {
+        const { base64, mimeType } = await processImage(image);
+        const firstForProject = isNewProject(projectId);
+        const screenshot = addScreenshot(
+          projectId,
+          base64,
+          mimeType,
+          caption || "",
+          null,
+          "agent",
+        );
+
+        if (description) {
+          setDescription(screenshot.id, description);
+        }
+
+        if (firstForProject) {
+          broadcast("project:created", { project: projectId });
+        }
+
+        broadcast("screenshot:added", {
+          id: screenshot.id,
+          status: screenshot.status,
+          prompt: screenshot.prompt,
+          createdAt: screenshot.createdAt,
+          source: "agent",
+          project: projectId,
+        });
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Image sent to browser (id: ${screenshot.id}).`,
+            },
+          ],
+        };
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Failed to send image: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
+        };
+      }
     },
   );
 
