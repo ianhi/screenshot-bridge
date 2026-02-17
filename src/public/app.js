@@ -550,6 +550,34 @@
         }
         setTimeout(() => updateHistoryCount(0), 220);
         break;
+
+      case "canvas:execute": {
+        // Local dev tool: intentional dynamic code execution for agent-driven canvas rendering
+        const { requestId, code, width, height } = data;
+        try {
+          const offscreen = document.createElement("canvas");
+          offscreen.width = width || 800;
+          offscreen.height = height || 600;
+          const ctx = offscreen.getContext("2d");
+          const render = new Function("canvas", "ctx", code); // eslint-disable-line no-new-func
+          render(offscreen, ctx);
+          const dataUrl = offscreen.toDataURL("image/png");
+          ws.send(
+            JSON.stringify({
+              event: "canvas:result",
+              data: { requestId, dataUrl },
+            }),
+          );
+        } catch (err) {
+          ws.send(
+            JSON.stringify({
+              event: "canvas:result",
+              data: { requestId, error: err.message },
+            }),
+          );
+        }
+        break;
+      }
     }
   }
 

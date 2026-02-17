@@ -15,7 +15,7 @@ import {
   markDelivered,
   setDescription,
 } from "./store.js";
-import { broadcast } from "./ws.js";
+import { broadcast, sendAndWait } from "./ws.js";
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
@@ -363,6 +363,87 @@ function createServer(projectId: string): McpServer {
             {
               type: "text" as const,
               text: `Failed to send image: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
+        };
+      }
+    },
+  );
+
+  server.registerTool(
+    "run_canvas",
+    {
+      title: "Run Canvas JS",
+      description:
+        "Execute JavaScript code on an HTML Canvas in the browser and capture the result as an image. The code has access to `canvas` (HTMLCanvasElement) and `ctx` (CanvasRenderingContext2D). Useful for generating charts, diagrams, visualizations, or any programmatic image. The resulting image appears in the browser with an 'agent' badge.",
+      inputSchema: z.object({
+        code: z
+          .string()
+          .describe(
+            "JavaScript code to execute. Has access to `canvas` and `ctx` (2D context). Draw on the canvas using standard Canvas API methods.",
+          ),
+        width: z
+          .number()
+          .optional()
+          .default(800)
+          .describe("Canvas width in pixels (default: 800)"),
+        height: z
+          .number()
+          .optional()
+          .default(600)
+          .describe("Canvas height in pixels (default: 600)"),
+        caption: z
+          .string()
+          .optional()
+          .describe("Caption for the resulting image"),
+      }),
+    },
+    async ({ code, width, height, caption }) => {
+      try {
+        const result = (await sendAndWait(
+          "canvas:execute",
+          { code, width, height },
+          10000,
+        )) as { dataUrl: string };
+
+        const { base64, mimeType } = await processImage(result.dataUrl);
+        const firstForProject = isNewProject(projectId);
+        const screenshot = addScreenshot(
+          projectId,
+          base64,
+          mimeType,
+          caption || "",
+          null,
+          "agent",
+        );
+
+        if (firstForProject) {
+          broadcast("project:created", { project: projectId });
+        }
+
+        broadcast("screenshot:added", {
+          id: screenshot.id,
+          status: screenshot.status,
+          prompt: screenshot.prompt,
+          createdAt: screenshot.createdAt,
+          source: "agent",
+          project: projectId,
+        });
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Canvas image rendered and saved (id: ${screenshot.id}).`,
+            },
+          ],
+        };
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Canvas execution failed: ${err instanceof Error ? err.message : String(err)}`,
             },
           ],
         };

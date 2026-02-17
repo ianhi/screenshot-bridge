@@ -19,7 +19,7 @@ Single Node.js process: Express 5 (static + REST API) + MCP (Streamable HTTP on 
 - `src/git.ts` -- captures git branch/commit from the server process's working directory
 - `src/mcp.ts` -- MCP server with 5 tools (one McpServer instance per session, scoped to a project)
 - `src/routes.ts` -- REST API endpoints
-- `src/ws.ts` -- WebSocket broadcast (unscoped: all clients receive all events, frontend filters by project)
+- `src/ws.ts` -- WebSocket broadcast + request/response (`sendAndWait` for canvas execution); unscoped: all clients receive all events, frontend filters by project
 - `src/index.ts` -- entry point
 - `src/public/` -- vanilla HTML/CSS/JS frontend
 
@@ -51,7 +51,7 @@ In each project's `.mcp.json`:
 
 ## MCP Tools
 
-6 tools registered per session, all auto-scoped to the session's project:
+7 tools registered per session, all auto-scoped to the session's project:
 
 - `get_pending_screenshots` -- returns undelivered screenshots as image content, marks them delivered (excludes agent-sent images)
 - `get_screenshot` -- retrieve a specific screenshot by ID (includes image data)
@@ -59,6 +59,7 @@ In each project's `.mcp.json`:
 - `search_screenshots` -- filter by git branch, commit, time range, or status; agent-sent images show `[agent]` marker
 - `describe_screenshot` -- save a text description for a screenshot (cached so subsequent `get_pending_screenshots` calls return text instead of image data, saving context window)
 - `send_image` -- send an image (data URL) to the browser UI for the user to see; supports optional caption and description; images appear with "agent" badge
+- `run_canvas` -- execute JavaScript on an HTML Canvas in the browser and capture the result as an image; code has access to `canvas` and `ctx` (2D context); supports width/height/caption params; 10s timeout
 
 ## REST API
 
@@ -82,6 +83,8 @@ All payloads include a `project` field. Events:
 - `screenshot:updated` -- status or description changed
 - `screenshot:deleted` -- single screenshot removed
 - `screenshots:cleared` -- all screenshots cleared for a project
+- `canvas:execute` -- server→browser: execute JS on a canvas (`{ requestId, code, width, height }`)
+- `canvas:result` -- browser→server: canvas execution result (`{ requestId, dataUrl }` or `{ requestId, error }`)
 
 ## Key Conventions
 
