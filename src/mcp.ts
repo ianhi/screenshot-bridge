@@ -53,6 +53,12 @@ function createServer(projectId: string): McpServer {
         if (s.prompt) {
           content.push({ type: "text" as const, text: `Prompt: ${s.prompt}` });
         }
+        if (s.annotations) {
+          content.push({
+            type: "text" as const,
+            text: `Annotations:\n${s.annotations}`,
+          });
+        }
         if (s.description) {
           content.push({
             type: "text" as const,
@@ -114,6 +120,12 @@ function createServer(projectId: string): McpServer {
       if (s.prompt) {
         content.push({ type: "text" as const, text: `Prompt: ${s.prompt}` });
       }
+      if (s.annotations) {
+        content.push({
+          type: "text" as const,
+          text: `Annotations:\n${s.annotations}`,
+        });
+      }
       if (s.description) {
         content.push({
           type: "text" as const,
@@ -157,6 +169,7 @@ function createServer(projectId: string): McpServer {
           if (s.git?.commitShort) line += ` commit:${s.git.commitShort}`;
           if (s.prompt) line += ` prompt: "${s.prompt}"`;
           if (s.description) line += ` description: "${s.description}"`;
+          if (s.annotations) line += " [has annotations]";
           return line;
         })
         .join("\n");
@@ -218,6 +231,7 @@ function createServer(projectId: string): McpServer {
           if (s.git?.commitShort) line += ` commit:${s.git.commitShort}`;
           if (s.prompt) line += ` prompt: "${s.prompt}"`;
           if (s.description) line += ` description: "${s.description}"`;
+          if (s.annotations) line += " [has annotations]";
           return line;
         })
         .join("\n");

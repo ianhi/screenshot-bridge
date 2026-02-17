@@ -29,7 +29,7 @@ apiRouter.get("/projects", (_req, res) => {
 
 apiRouter.post("/screenshots", async (req, res) => {
   try {
-    const { dataUrl, prompt = "" } = req.body;
+    const { dataUrl, prompt = "", annotations = null } = req.body;
     if (!dataUrl || typeof dataUrl !== "string") {
       res.status(400).json({ error: "dataUrl is required" });
       return;
@@ -40,7 +40,13 @@ apiRouter.post("/screenshots", async (req, res) => {
     const firstForProject = isNewProject(projectId);
 
     const { base64, mimeType } = await processImage(dataUrl);
-    const screenshot = addScreenshot(projectId, base64, mimeType, prompt);
+    const screenshot = addScreenshot(
+      projectId,
+      base64,
+      mimeType,
+      prompt,
+      annotations,
+    );
 
     if (firstForProject) {
       broadcast("project:created", { project: projectId });

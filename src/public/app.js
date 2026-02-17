@@ -17,8 +17,14 @@
   const toastContainer = $id("toastContainer");
   const projectTabs = $id("projectTabs");
   const projectTabsInner = $id("projectTabsInner");
+  const markupContainer = $id("markupContainer");
+  const markupOverlay = $id("markupOverlay");
+  const markupToolbar = $id("markupToolbar");
+  const markupClearBtn = $id("markupClearBtn");
+  const micBtn = $id("micBtn");
 
   let currentDataUrl = null;
+  let markup = null;
   let ws = null;
   let wsReconnectTimer = null;
 
@@ -86,8 +92,23 @@
     previewImg.src = dataUrl;
     preview.hidden = false;
     sendBar.hidden = false;
+    markupToolbar.hidden = false;
     dropZone.classList.add("has-preview");
     promptInput.focus();
+
+    // Initialize markup tools
+    if (!markup) {
+      markup = window.createMarkupTools(
+        markupContainer,
+        markupOverlay,
+        previewImg,
+      );
+    } else {
+      markup.clear();
+      markup.setTool(null);
+    }
+    markup.attachToImage(previewImg);
+    updateToolbarButtons();
   }
 
   function discardPreview() {
@@ -95,8 +116,14 @@
     previewImg.src = "";
     preview.hidden = true;
     sendBar.hidden = true;
+    markupToolbar.hidden = true;
     promptInput.value = "";
     dropZone.classList.remove("has-preview");
+    if (markup) {
+      markup.clear();
+      markup.setTool(null);
+      updateToolbarButtons();
+    }
   }
 
   function readFileAsDataUrl(file) {
@@ -168,6 +195,7 @@
         body: JSON.stringify({
           dataUrl: currentDataUrl,
           prompt: promptInput.value.trim(),
+          annotations: markup ? markup.serialize() : null,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -500,6 +528,91 @@
         setTimeout(() => updateHistoryCount(0), 220);
         break;
     }
+  }
+
+  // ─── Markup Toolbar ───
+
+  function updateToolbarButtons() {
+    const active = markup ? markup.getActiveTool() : null;
+    for (const btn of markupToolbar.querySelectorAll(".markup-tool-btn")) {
+      btn.classList.toggle("active", btn.dataset.tool === active);
+    }
+  }
+
+  markupToolbar.addEventListener("click", (e) => {
+    const btn = e.target.closest(".markup-tool-btn");
+    if (!btn || !markup) return;
+    const tool = btn.dataset.tool;
+    const current = markup.getActiveTool();
+    markup.setTool(current === tool ? null : tool);
+    updateToolbarButtons();
+  });
+
+  markupClearBtn.addEventListener("click", () => {
+    if (markup) {
+      markup.clear();
+      markup.setTool(null);
+      updateToolbarButtons();
+    }
+  });
+
+  // Keyboard shortcuts for tools (when prompt not focused)
+  document.addEventListener("keydown", (e) => {
+    if (!markup || markupToolbar.hidden) return;
+    if (document.activeElement === promptInput) return;
+    if (document.activeElement?.tagName === "INPUT") return;
+
+    const key = e.key.toLowerCase();
+    const toolMap = { a: "arrow", b: "box", t: "text", p: "pin" };
+    if (toolMap[key]) {
+      e.preventDefault();
+      const current = markup.getActiveTool();
+      markup.setTool(current === toolMap[key] ? null : toolMap[key]);
+      updateToolbarButtons();
+    }
+    if (e.key === "Escape") {
+      markup.setTool(null);
+      updateToolbarButtons();
+    }
+  });
+
+  // ─── Voice Input ───
+
+  if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+    micBtn.hidden = false;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+
+    micBtn.addEventListener("click", () => {
+      if (recognition) {
+        recognition.stop();
+        return;
+      }
+      recognition = new SpeechRecognition();
+      recognition.interimResults = false;
+      recognition.continuous = false;
+      recognition.lang = navigator.language || "en-US";
+
+      recognition.onstart = () => {
+        micBtn.classList.add("listening");
+      };
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        promptInput.value = promptInput.value
+          ? `${promptInput.value} ${transcript}`
+          : transcript;
+      };
+      recognition.onerror = () => {
+        micBtn.classList.remove("listening");
+        recognition = null;
+      };
+      recognition.onend = () => {
+        micBtn.classList.remove("listening");
+        recognition = null;
+      };
+      recognition.start();
+    });
   }
 
   // ─── Init ───

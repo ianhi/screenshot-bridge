@@ -13,6 +13,7 @@ export interface Screenshot {
   projectId: string;
   prompt: string;
   description: string | null;
+  annotations: string | null;
   imageBase64: string;
   mimeType: string;
   status: "pending" | "delivered";
@@ -120,6 +121,7 @@ export function loadFromDisk(): void {
           fs.readFileSync(path.join(projectDir, file), "utf-8"),
         );
         data.projectId = projectId;
+        if (data.annotations === undefined) data.annotations = null;
         screenshots.set(data.id, data);
         knownProjects.add(projectId);
         total++;
@@ -139,6 +141,7 @@ export function addScreenshot(
   imageBase64: string,
   mimeType: string,
   prompt: string,
+  annotations?: string | null,
 ): Screenshot {
   const gitCtx = getGitContext();
   const s: Screenshot = {
@@ -146,6 +149,7 @@ export function addScreenshot(
     projectId,
     prompt,
     description: null,
+    annotations: annotations || null,
     imageBase64,
     mimeType,
     status: "pending",

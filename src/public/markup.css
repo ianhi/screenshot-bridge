@@ -1,0 +1,236 @@
+/* ─── Markup Toolbar ─── */
+
+.markup-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  animation: slideUp 200ms ease;
+}
+
+.markup-toolbar .markup-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  padding: 0;
+}
+
+.markup-toolbar .markup-tool-btn:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.markup-toolbar .markup-tool-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.markup-toolbar .markup-tool-btn kbd {
+  display: none;
+}
+
+.markup-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+.markup-toolbar .markup-clear-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 10px;
+  font: 11px var(--font);
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.markup-toolbar .markup-clear-btn:hover {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-dim);
+}
+
+/* ─── Markup Container & SVG Overlay ─── */
+
+.markup-container {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.markup-container img {
+  display: block;
+  max-width: 100%;
+  max-height: 400px;
+  margin: 0 auto;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+}
+
+.markup-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.markup-overlay.tool-active {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.markup-overlay.tool-text {
+  cursor: text;
+}
+
+.markup-overlay.tool-pin {
+  cursor: copy;
+}
+
+/* ─── Annotation Visual Styles ─── */
+
+.markup-overlay line.annotation-arrow {
+  stroke: #ff4444;
+  stroke-width: 2.5;
+  fill: none;
+}
+
+.markup-overlay marker path {
+  fill: #ff4444;
+}
+
+.markup-overlay rect.annotation-box {
+  stroke: #44aaff;
+  stroke-width: 2.5;
+  stroke-dasharray: 8 4;
+  fill: rgba(68, 170, 255, 0.08);
+}
+
+.markup-overlay text.annotation-text {
+  fill: #ffdd44;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  paint-order: stroke fill;
+  stroke: rgba(0, 0, 0, 0.7);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.markup-overlay circle.annotation-pin {
+  fill: #ff4444;
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.markup-overlay text.annotation-pin-label {
+  fill: #fff;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* ─── Delete Handle ─── */
+
+.markup-overlay .annotation-group .delete-handle {
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 150ms;
+  pointer-events: auto;
+}
+
+.markup-overlay .annotation-group:hover .delete-handle {
+  opacity: 1;
+}
+
+.markup-overlay .delete-handle circle {
+  fill: var(--red);
+}
+
+.markup-overlay .delete-handle line {
+  stroke: #fff;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+/* ─── Text Input Popover ─── */
+
+.markup-text-input {
+  position: absolute;
+  z-index: 10;
+  padding: 4px 8px;
+  font: 14px var(--font-sans);
+  font-weight: 600;
+  color: #ffdd44;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  outline: none;
+  min-width: 60px;
+  max-width: 300px;
+}
+
+/* ─── Pin Note Popover ─── */
+
+.markup-pin-popover {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.markup-pin-popover input {
+  padding: 4px 8px;
+  font: 12px var(--font);
+  color: var(--text);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  outline: none;
+  width: 160px;
+}
+
+.markup-pin-popover input:focus {
+  border-color: var(--accent);
+}
+
+.markup-pin-popover button {
+  padding: 4px 10px;
+  font: 11px var(--font);
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
