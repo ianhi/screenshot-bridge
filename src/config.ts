@@ -9,6 +9,8 @@ export const config = {
   port: Number.parseInt(process.env.PORT || "3456", 10),
   host: process.env.HOST || "0.0.0.0",
   dataDir: process.env.DATA_DIR || defaultDataDir,
+  openBrowser:
+    process.env.OPEN_BROWSER !== "0" && process.env.OPEN_BROWSER !== "false",
 
   // Image compression cascade (see image.ts):
   // 1. Resize to maxImageDimension if larger

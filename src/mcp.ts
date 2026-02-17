@@ -17,7 +17,20 @@ import {
 } from "./store.js";
 import { broadcast, sendAndWait } from "./ws.js";
 
-const transports = new Map<string, StreamableHTTPServerTransport>();
+interface McpSession {
+  transport: StreamableHTTPServerTransport;
+  projectId: string;
+}
+
+const sessions = new Map<string, McpSession>();
+
+export function getSessionCounts(): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const { projectId } of sessions.values()) {
+    counts[projectId] = (counts[projectId] || 0) + 1;
+  }
+  return counts;
+}
 
 // Each MCP session gets its own McpServer instance because tool handlers
 // close over the session's projectId (captured from ?project= at init time).
@@ -460,10 +473,10 @@ export async function handleMcpRequest(
 ): Promise<void> {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-  if (sessionId && transports.has(sessionId)) {
-    const transport = transports.get(sessionId);
-    if (!transport) return;
-    await transport.handleRequest(req, res, req.body);
+  if (sessionId && sessions.has(sessionId)) {
+    const session = sessions.get(sessionId);
+    if (!session) return;
+    await session.transport.handleRequest(req, res, req.body);
     return;
   }
 
@@ -473,13 +486,27 @@ export async function handleMcpRequest(
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (sid) => {
-        transports.set(sid, transport);
+        sessions.set(sid, { transport, projectId });
+        broadcast("session:connected", {
+          project: projectId,
+          count:
+            Object.fromEntries(
+              Object.entries(getSessionCounts()).filter(
+                ([p]) => p === projectId,
+              ),
+            )[projectId] ?? 1,
+        });
       },
     });
 
     transport.onclose = () => {
       const sid = transport.sessionId;
-      if (sid) transports.delete(sid);
+      if (sid) sessions.delete(sid);
+      const counts = getSessionCounts();
+      broadcast("session:disconnected", {
+        project: projectId,
+        count: counts[projectId] ?? 0,
+      });
     };
 
     const server = createServer(projectId);
@@ -497,11 +524,11 @@ export async function handleMcpRequest(
 
 export async function handleMcpGet(req: Request, res: Response): Promise<void> {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
-  if (!sessionId || !transports.has(sessionId)) {
+  if (!sessionId || !sessions.has(sessionId)) {
     res.status(400).send("Invalid or missing session ID");
     return;
   }
-  await transports.get(sessionId)?.handleRequest(req, res);
+  await sessions.get(sessionId)?.transport.handleRequest(req, res);
 }
 
 export async function handleMcpDelete(
@@ -509,9 +536,9 @@ export async function handleMcpDelete(
   res: Response,
 ): Promise<void> {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
-  if (!sessionId || !transports.has(sessionId)) {
+  if (!sessionId || !sessions.has(sessionId)) {
     res.status(400).send("Invalid or missing session ID");
     return;
   }
-  await transports.get(sessionId)?.handleRequest(req, res);
+  await sessions.get(sessionId)?.transport.handleRequest(req, res);
 }

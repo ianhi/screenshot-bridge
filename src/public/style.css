@@ -161,6 +161,69 @@ body {
   border-bottom-color: var(--accent);
 }
 
+/* ─── Project Status ─── */
+
+.project-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.project-status-name {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.project-status-sep {
+  color: var(--text-dim);
+}
+
+.project-status-sessions {
+  color: var(--text-dim);
+  transition: color var(--transition);
+}
+
+.project-status-sessions.connected {
+  color: var(--green);
+}
+
+/* ─── Tab Agent Dot ─── */
+
+.tab-agent-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 4px rgba(52, 211, 153, 0.5);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ─── Badge Delivery Pulse ─── */
+
+.badge-just-delivered {
+  animation: badgePulse 600ms ease;
+}
+
+@keyframes badgePulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+  }
+}
+
 /* ─── Drop Zone ─── */
 
 .capture-section {

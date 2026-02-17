@@ -27,11 +27,15 @@
   const markupClearBtn = $id("markupClearBtn");
   const micBtn = $id("micBtn");
   const clipboardBtn = $id("clipboardBtn");
+  const projectStatus = $id("projectStatus");
+  const projectStatusName = $id("projectStatusName");
+  const projectStatusSessions = $id("projectStatusSessions");
 
   let currentDataUrl = null;
   let markup = null;
   let ws = null;
   let wsReconnectTimer = null;
+  let sessionCounts = {};
 
   // ─── Project State ───
 
@@ -41,6 +45,18 @@
   function apiUrl(path) {
     const sep = path.includes("?") ? "&" : "?";
     return `${path}${sep}project=${encodeURIComponent(currentProject)}`;
+  }
+
+  function updateProjectStatus() {
+    projectStatusName.textContent = currentProject;
+    const count = sessionCounts[currentProject] || 0;
+    if (count > 0) {
+      projectStatusSessions.textContent = `${count} agent${count !== 1 ? "s" : ""} connected`;
+      projectStatusSessions.classList.add("connected");
+    } else {
+      projectStatusSessions.textContent = "no agents connected";
+      projectStatusSessions.classList.remove("connected");
+    }
   }
 
   function renderTabs() {
@@ -59,15 +75,23 @@
       const btn = document.createElement("button");
       btn.className = `project-tab${name === currentProject ? " active" : ""}`;
       btn.textContent = name;
+      if (sessionCounts[name] > 0) {
+        const dot = document.createElement("span");
+        dot.className = "tab-agent-dot";
+        btn.appendChild(dot);
+      }
       btn.addEventListener("click", () => switchProject(name));
       projectTabsInner.appendChild(btn);
     }
+
+    updateProjectStatus();
   }
 
   function switchProject(name) {
     if (name === currentProject) return;
     currentProject = name;
     renderTabs();
+    updateProjectStatus();
     loadHistory();
   }
 
@@ -499,6 +523,20 @@
         }
         break;
 
+      case "session:connected":
+        sessionCounts[eventProject] = data.count || 0;
+        renderTabs();
+        updateProjectStatus();
+        break;
+
+      case "session:disconnected":
+        sessionCounts[eventProject] = data.count || 0;
+        if (sessionCounts[eventProject] === 0)
+          delete sessionCounts[eventProject];
+        renderTabs();
+        updateProjectStatus();
+        break;
+
       case "screenshot:updated": {
         if (eventProject !== currentProject) break;
         const item = historyList.querySelector(
@@ -510,6 +548,14 @@
             if (badge) {
               badge.className = `badge badge-${data.status === "delivered" ? "delivered" : "pending"}`;
               badge.textContent = data.status;
+              if (data.status === "delivered") {
+                badge.classList.add("badge-just-delivered");
+                setTimeout(
+                  () => badge.classList.remove("badge-just-delivered"),
+                  600,
+                );
+                toast("Agent picked up a screenshot");
+              }
             }
           }
           if (data.description !== undefined) {
@@ -764,6 +810,15 @@
       // Server may not have projects yet
     }
 
+    try {
+      const res = await fetch("/api/sessions");
+      if (res.ok) {
+        sessionCounts = await res.json();
+      }
+    } catch {
+      // Server may not support sessions endpoint yet
+    }
+
     if (projectSet.size === 0) {
       projectSet.add("default");
     }
@@ -772,6 +827,7 @@
     }
 
     renderTabs();
+    updateProjectStatus();
     loadHistory();
     connectWs();
   }

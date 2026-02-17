@@ -1,6 +1,7 @@
 import type { Request } from "express";
 import { Router } from "express";
 import { processImage } from "./image.js";
+import { getSessionCounts } from "./mcp.js";
 import {
   addScreenshot,
   clearAll,
@@ -20,7 +21,11 @@ function getProject(req: Request): string {
 }
 
 apiRouter.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+  res.json({ status: "ok", sessions: getSessionCounts() });
+});
+
+apiRouter.get("/sessions", (_req, res) => {
+  res.json(getSessionCounts());
 });
 
 apiRouter.get("/projects", (_req, res) => {
