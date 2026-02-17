@@ -118,6 +118,49 @@ body {
   background: var(--red-dim);
 }
 
+/* ─── Project Tabs ─── */
+
+.project-tabs {
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.project-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.project-tabs-inner {
+  display: flex;
+  gap: 0;
+  min-width: min-content;
+}
+
+.project-tab {
+  padding: 8px 16px;
+  font: 12px var(--font);
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.project-tab:hover {
+  color: var(--text);
+  background: var(--bg-elevated);
+}
+
+.project-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
 /* ─── Drop Zone ─── */
 
 .capture-section {

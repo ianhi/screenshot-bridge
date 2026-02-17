@@ -15,17 +15,55 @@
   const clearAllBtn = $id("clearAllBtn");
   const connectionStatus = $id("connectionStatus");
   const toastContainer = $id("toastContainer");
+  const projectTabs = $id("projectTabs");
+  const projectTabsInner = $id("projectTabsInner");
 
   let currentDataUrl = null;
   let ws = null;
   let wsReconnectTimer = null;
 
-  // ─── Helpers ───
+  // ─── Project State ───
 
-  function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.textContent;
+  let currentProject = "default";
+  const projectSet = new Set();
+
+  function apiUrl(path) {
+    const sep = path.includes("?") ? "&" : "?";
+    return `${path}${sep}project=${encodeURIComponent(currentProject)}`;
+  }
+
+  function renderTabs() {
+    const projects = [...projectSet].sort();
+    const showTabs = projects.length > 1;
+    projectTabs.hidden = !showTabs;
+
+    // Clear existing tabs
+    while (projectTabsInner.firstChild) {
+      projectTabsInner.removeChild(projectTabsInner.firstChild);
+    }
+
+    if (!showTabs) return;
+
+    for (const name of projects) {
+      const btn = document.createElement("button");
+      btn.className = `project-tab${name === currentProject ? " active" : ""}`;
+      btn.textContent = name;
+      btn.addEventListener("click", () => switchProject(name));
+      projectTabsInner.appendChild(btn);
+    }
+  }
+
+  function switchProject(name) {
+    if (name === currentProject) return;
+    currentProject = name;
+    renderTabs();
+    loadHistory();
+  }
+
+  function addProject(name) {
+    if (projectSet.has(name)) return;
+    projectSet.add(name);
+    renderTabs();
   }
 
   // ─── Toast ───
@@ -124,7 +162,7 @@
     if (!currentDataUrl) return;
     sendBtn.disabled = true;
     try {
-      const res = await fetch("/api/screenshots", {
+      const res = await fetch(apiUrl("/api/screenshots"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -315,7 +353,7 @@
 
   async function loadHistory() {
     try {
-      const res = await fetch("/api/screenshots");
+      const res = await fetch(apiUrl("/api/screenshots"));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const items = await res.json();
 
@@ -351,7 +389,7 @@
     const items = historyList.querySelectorAll(".history-item");
     if (items.length === 0) return;
     try {
-      const res = await fetch("/api/screenshots", { method: "DELETE" });
+      const res = await fetch(apiUrl("/api/screenshots"), { method: "DELETE" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch (err) {
       toast(`Clear failed: ${err.message}`, "error");
@@ -395,12 +433,22 @@
   }
 
   function handleWsEvent(event, data) {
+    const eventProject = data?.project || "default";
+
     switch (event) {
+      case "project:created":
+        addProject(eventProject);
+        break;
+
       case "screenshot:added":
-        loadHistory();
+        addProject(eventProject);
+        if (eventProject === currentProject) {
+          loadHistory();
+        }
         break;
 
       case "screenshot:updated": {
+        if (eventProject !== currentProject) break;
         const item = historyList.querySelector(
           `[data-id="${CSS.escape(data.id)}"]`,
         );
@@ -427,6 +475,7 @@
       }
 
       case "screenshot:deleted": {
+        if (eventProject !== currentProject) break;
         const item = historyList.querySelector(
           `[data-id="${CSS.escape(data.id)}"]`,
         );
@@ -443,6 +492,7 @@
       }
 
       case "screenshots:cleared":
+        if (eventProject !== currentProject) break;
         for (const el of historyList.querySelectorAll(".history-item")) {
           el.classList.add("removing");
           setTimeout(() => el.remove(), 200);
@@ -454,6 +504,30 @@
 
   // ─── Init ───
 
-  loadHistory();
-  connectWs();
+  async function init() {
+    try {
+      const res = await fetch("/api/projects");
+      if (res.ok) {
+        const projects = await res.json();
+        for (const p of projects) {
+          projectSet.add(p);
+        }
+      }
+    } catch {
+      // Server may not have projects yet
+    }
+
+    if (projectSet.size === 0) {
+      projectSet.add("default");
+    }
+    if (!projectSet.has(currentProject)) {
+      currentProject = [...projectSet][0];
+    }
+
+    renderTabs();
+    loadHistory();
+    connectWs();
+  }
+
+  init();
 })();

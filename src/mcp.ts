@@ -15,8 +15,11 @@ import {
 import { broadcast } from "./ws.js";
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
+const sessionProjects = new Map<string, string>();
 
-function createServer(): McpServer {
+// Each MCP session gets its own McpServer instance because tool handlers
+// close over the session's projectId (captured from ?project= at init time).
+function createServer(projectId: string): McpServer {
   const server = new McpServer({
     name: "screenshot-bridge",
     version: "1.0.0",
@@ -31,7 +34,7 @@ function createServer(): McpServer {
       inputSchema: z.object({}),
     },
     async () => {
-      const pending = getPending();
+      const pending = getPending(projectId);
       if (pending.length === 0) {
         return {
           content: [{ type: "text" as const, text: "No pending screenshots." }],
@@ -68,7 +71,11 @@ function createServer(): McpServer {
           });
         }
         markDelivered(s.id);
-        broadcast("screenshot:updated", { id: s.id, status: "delivered" });
+        broadcast("screenshot:updated", {
+          id: s.id,
+          status: "delivered",
+          project: projectId,
+        });
       }
 
       content.push({
@@ -137,7 +144,7 @@ function createServer(): McpServer {
       inputSchema: z.object({}),
     },
     async () => {
-      const items = listScreenshots();
+      const items = listScreenshots(projectId);
       if (items.length === 0) {
         return {
           content: [{ type: "text" as const, text: "No screenshots stored." }],
@@ -193,7 +200,7 @@ function createServer(): McpServer {
       }),
     },
     async (opts) => {
-      const items = filterScreenshots(opts);
+      const items = filterScreenshots(projectId, opts);
       if (items.length === 0) {
         return {
           content: [
@@ -254,7 +261,7 @@ function createServer(): McpServer {
           ],
         };
       }
-      broadcast("screenshot:updated", { id, description });
+      broadcast("screenshot:updated", { id, description, project: projectId });
       return {
         content: [
           {
@@ -283,19 +290,25 @@ export async function handleMcpRequest(
   }
 
   if (!sessionId && isInitializeRequest(req.body)) {
+    const projectId = (req.query.project as string | undefined) || "default";
+
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (sid) => {
         transports.set(sid, transport);
+        sessionProjects.set(sid, projectId);
       },
     });
 
     transport.onclose = () => {
       const sid = transport.sessionId;
-      if (sid) transports.delete(sid);
+      if (sid) {
+        transports.delete(sid);
+        sessionProjects.delete(sid);
+      }
     };
 
-    const server = createServer();
+    const server = createServer(projectId);
     await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
     return;

@@ -1,3 +1,6 @@
+// Git context is captured from the server process's working directory,
+// not from any per-project directory. The result is cached after first check.
+
 import { execFileSync } from "node:child_process";
 
 export interface GitContext {
