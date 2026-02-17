@@ -14,7 +14,7 @@ Web-based screenshot bridge: paste screenshots in browser, retrieve them via MCP
 Single Node.js process: Express 5 (static + REST API) + MCP (Streamable HTTP on /mcp) + WebSocket.
 
 - `src/config.ts` -- env-based config
-- `src/store.ts` -- in-memory screenshot store with disk persistence (`data/<projectId>/<id>.json`)
+- `src/store.ts` -- in-memory screenshot store with disk persistence (`~/.screenshot-bridge/data/<projectId>/<id>.json`)
 - `src/image.ts` -- sharp resize/compress pipeline (always outputs JPEG to stay under MCP 1MB limit)
 - `src/git.ts` -- captures git branch/commit from the server process's working directory
 - `src/mcp.ts` -- MCP server with 5 tools (one McpServer instance per session, scoped to a project)
@@ -27,9 +27,9 @@ Single Node.js process: Express 5 (static + REST API) + MCP (Streamable HTTP on 
 
 Screenshots are scoped by project. Each project has isolated storage and MCP tool results.
 
-- **Disk layout**: `data/<projectId>/<uuid>.json` -- one subdirectory per project
+- **Disk layout**: `~/.screenshot-bridge/data/<projectId>/<uuid>.json` -- one subdirectory per project (override with `DATA_DIR` env var)
 - **Default project**: When no project is specified, `"default"` is used
-- **Legacy migration**: On startup, any flat `data/*.json` files are auto-migrated into `data/default/`
+- **Legacy migration**: On startup, any flat `*.json` files in the data dir are auto-migrated into the `default/` subdirectory
 - **MCP scoping**: The `?project=` query param on the MCP URL is read at session initialization and bound for the session's lifetime. All tool calls in that session are automatically scoped.
 - **REST scoping**: Pass `?project=<name>` on REST endpoints to scope operations
 - **WebSocket**: All events broadcast to all clients with a `project` field; frontend filters client-side
@@ -87,6 +87,6 @@ All payloads include a `project` field. Events:
 - Express 5 (not v4 -- different error handling and route matching)
 - MCP SDK v2: use `registerTool()` with `z.object()` schemas -- import from `"zod/v4"` (not `"zod"`)
 - Images always converted to JPEG and compressed to stay under 750KB base64 (MCP 1MB limit)
-- All screenshots held in memory for fast access; disk JSON is for persistence across restarts
+- All screenshots held in memory for fast access; disk JSON (`~/.screenshot-bridge/data/`) is for persistence across restarts
 - Port 3456 by default (configurable via PORT env var)
 - No authentication -- designed as a local development tool
