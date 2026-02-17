@@ -423,25 +423,37 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
 
   function serialize() {
     if (annotations.length === 0) return null;
-    return annotations
-      .map((ann) => {
-        switch (ann.type) {
-          case "arrow":
-            return `Arrow from (${ann.data.x1},${ann.data.y1}) to (${ann.data.x2},${ann.data.y2})`;
-          case "box":
-            return `Box at (${ann.data.x1},${ann.data.y1})-(${ann.data.x2},${ann.data.y2})`;
-          case "text":
-            return `Text '${ann.data.label}' at (${ann.data.x},${ann.data.y})`;
-          case "pin": {
-            let s = `Pin #${ann.data.num} at (${ann.data.x},${ann.data.y})`;
-            if (ann.data.note) s += ` note: '${ann.data.note}'`;
-            return s;
-          }
-          default:
-            return "";
+    const natW = img.naturalWidth || 1;
+    const natH = img.naturalHeight || 1;
+    const pct = (x, y) =>
+      `${Math.round((x / natW) * 100)}%,${Math.round((y / natH) * 100)}%`;
+    const lines = [`Image dimensions: ${natW}x${natH}`];
+    for (const ann of annotations) {
+      switch (ann.type) {
+        case "arrow":
+          lines.push(
+            `Arrow from (${ann.data.x1},${ann.data.y1} / ${pct(ann.data.x1, ann.data.y1)}) to (${ann.data.x2},${ann.data.y2} / ${pct(ann.data.x2, ann.data.y2)})`,
+          );
+          break;
+        case "box":
+          lines.push(
+            `Box at (${ann.data.x1},${ann.data.y1} / ${pct(ann.data.x1, ann.data.y1)})-(${ann.data.x2},${ann.data.y2} / ${pct(ann.data.x2, ann.data.y2)})`,
+          );
+          break;
+        case "text":
+          lines.push(
+            `Text '${ann.data.label}' at (${ann.data.x},${ann.data.y} / ${pct(ann.data.x, ann.data.y)})`,
+          );
+          break;
+        case "pin": {
+          let s = `Pin #${ann.data.num} at (${ann.data.x},${ann.data.y} / ${pct(ann.data.x, ann.data.y)})`;
+          if (ann.data.note) s += ` note: '${ann.data.note}'`;
+          lines.push(s);
+          break;
         }
-      })
-      .join("\n");
+      }
+    }
+    return lines.join("\n");
   }
 
   function attachToImage() {

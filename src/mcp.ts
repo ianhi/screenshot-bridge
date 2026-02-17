@@ -29,10 +29,18 @@ function createServer(projectId: string): McpServer {
     {
       title: "Get Pending Screenshots",
       description:
-        "Returns all undelivered screenshots as image content with optional prompt text. Marks them as delivered. IMPORTANT: Images consume significant context. To preserve your context window, consider using a subagent (via the Task tool) to analyze and describe the image content, then work with the text description instead of keeping the raw image in your main conversation.",
-      inputSchema: z.object({}),
+        "Returns all undelivered screenshots as image content with optional prompt text. Marks them as delivered. IMPORTANT: Images consume significant context. To preserve your context window, consider using a subagent (via the Task tool) to analyze and describe the image content, then work with the text description instead of keeping the raw image in your main conversation. Set include_images to false to skip image data and only return text metadata (id, prompt, annotations, description).",
+      inputSchema: z.object({
+        include_images: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Whether to include image data in the response. Set to false to only return text metadata (id, prompt, annotations, description). Default: true",
+          ),
+      }),
     },
-    async () => {
+    async ({ include_images }) => {
       const pending = getPending(projectId);
       if (pending.length === 0) {
         return {
@@ -64,7 +72,7 @@ function createServer(projectId: string): McpServer {
             type: "text" as const,
             text: `[Previously described] ${s.description}`,
           });
-        } else {
+        } else if (include_images) {
           content.push({
             type: "image" as const,
             data: s.imageBase64,

@@ -617,6 +617,12 @@
 
   // ─── Init ───
 
+  // Mac keyboard hint
+  if (navigator.platform.includes("Mac")) {
+    const mod = $id("pasteModifier");
+    if (mod) mod.textContent = "Cmd";
+  }
+
   async function init() {
     try {
       const res = await fetch("/api/projects");
