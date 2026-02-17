@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screenshot Bridge</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="1" y="1" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M5 14L8 10L11 12L15 7" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="14" cy="6" r="1.5" fill="var(--accent)"/>
+          </svg>
+          <span class="logo-text">Screenshot Bridge</span>
+        </div>
+        <div class="connection-status" id="connectionStatus" title="Disconnected">
+          <span class="status-dot"></span>
+        </div>
+      </div>
+      <button class="btn-clear" id="clearAllBtn" title="Clear all screenshots">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 4h10M5 4V3a1 1 0 011-1h2a1 1 0 011 1v1M9 7v4M5 7v4M3 4l.5 7.5a1 1 0 001 .5h5a1 1 0 001-.5L11 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Clear All
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="capture-section">
+        <div class="drop-zone" id="dropZone" tabindex="0">
+          <div class="drop-zone-inner" id="dropZoneInner">
+            <div class="drop-zone-icon">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <rect x="4" y="8" width="40" height="32" rx="3" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3"/>
+                <path d="M16 28l6-8 5 6 7-10" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="34" cy="18" r="3" stroke="var(--accent)" stroke-width="2"/>
+              </svg>
+            </div>
+            <p class="drop-zone-text">Paste or drop a screenshot</p>
+            <p class="drop-zone-hint"><kbd>Ctrl</kbd><span>+</span><kbd>V</kbd> or drag &amp; drop</p>
+          </div>
+
+          <div class="preview" id="preview" hidden>
+            <img id="previewImg" alt="Preview">
+            <button class="preview-discard" id="discardBtn" title="Discard">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="send-bar" id="sendBar" hidden>
+          <input type="text" class="prompt-input" id="promptInput" placeholder="Add context or prompt (optional)" autocomplete="off">
+          <button class="btn-send" id="sendBtn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 8h12M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Send
+          </button>
+        </div>
+      </div>
+
+      <section class="history-section" id="historySection">
+        <div class="history-header">
+          <h2 class="history-title">History</h2>
+          <span class="history-count" id="historyCount"></span>
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="history-empty" id="historyEmpty">
+            <p>No screenshots yet</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script src="app.js"></script>
+</body>
+</html>
