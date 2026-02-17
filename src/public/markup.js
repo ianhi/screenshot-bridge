@@ -369,6 +369,113 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
     });
   }
 
+  // ─── Move Tool ───
+
+  function findAnnotationAt(target) {
+    const group = target.closest(".annotation-group");
+    if (!group) return null;
+    return annotations.find((a) => a.el === group) || null;
+  }
+
+  function startMove(e, coords) {
+    const ann = findAnnotationAt(e.target);
+    if (!ann) return;
+    dragState = {
+      type: "move",
+      ann,
+      startX: coords.x,
+      startY: coords.y,
+      origData: { ...ann.data },
+    };
+  }
+
+  function moveMove(coords) {
+    if (!dragState || dragState.type !== "move") return;
+    const { ann, startX, startY, origData } = dragState;
+    const dx = coords.x - startX;
+    const dy = coords.y - startY;
+    applyMoveOffset(ann, origData, dx, dy);
+  }
+
+  function endMove() {
+    if (!dragState || dragState.type !== "move") return;
+    dragState = null;
+  }
+
+  function applyMoveOffset(ann, origData, dx, dy) {
+    const d = ann.data;
+    switch (ann.type) {
+      case "arrow": {
+        d.x1 = origData.x1 + dx;
+        d.y1 = origData.y1 + dy;
+        d.x2 = origData.x2 + dx;
+        d.y2 = origData.y2 + dy;
+        const line = ann.el.querySelector(".annotation-arrow");
+        line.setAttribute("x1", d.x1);
+        line.setAttribute("y1", d.y1);
+        line.setAttribute("x2", d.x2);
+        line.setAttribute("y2", d.y2);
+        repositionDeleteHandle(ann.el, d.x1, d.y1);
+        break;
+      }
+      case "box": {
+        d.x1 = origData.x1 + dx;
+        d.y1 = origData.y1 + dy;
+        d.x2 = origData.x2 + dx;
+        d.y2 = origData.y2 + dy;
+        const rect = ann.el.querySelector(".annotation-box");
+        rect.setAttribute("x", Math.min(d.x1, d.x2));
+        rect.setAttribute("y", Math.min(d.y1, d.y2));
+        repositionDeleteHandle(
+          ann.el,
+          Math.min(d.x1, d.x2),
+          Math.min(d.y1, d.y2),
+        );
+        break;
+      }
+      case "text": {
+        d.x = origData.x + dx;
+        d.y = origData.y + dy;
+        const text = ann.el.querySelector(".annotation-text");
+        text.setAttribute("x", d.x);
+        text.setAttribute("y", d.y);
+        repositionDeleteHandle(ann.el, d.x, d.y - 18);
+        break;
+      }
+      case "pin": {
+        d.x = origData.x + dx;
+        d.y = origData.y + dy;
+        const circle = ann.el.querySelector(".annotation-pin");
+        circle.setAttribute("cx", d.x);
+        circle.setAttribute("cy", d.y);
+        const label = ann.el.querySelector(".annotation-pin-label");
+        label.setAttribute("x", d.x);
+        label.setAttribute("y", d.y);
+        repositionDeleteHandle(ann.el, d.x + 14, d.y - 14);
+        break;
+      }
+    }
+  }
+
+  function repositionDeleteHandle(group, x, y) {
+    const del = group.querySelector(".delete-handle");
+    if (!del) return;
+    const c = del.querySelector("circle");
+    c.setAttribute("cx", x);
+    c.setAttribute("cy", y);
+    const lines = del.querySelectorAll("line");
+    if (lines.length === 2) {
+      lines[0].setAttribute("x1", x - 3);
+      lines[0].setAttribute("y1", y - 3);
+      lines[0].setAttribute("x2", x + 3);
+      lines[0].setAttribute("y2", y + 3);
+      lines[1].setAttribute("x1", x + 3);
+      lines[1].setAttribute("y1", y - 3);
+      lines[1].setAttribute("x2", x - 3);
+      lines[1].setAttribute("y2", y + 3);
+    }
+  }
+
   // ─── Pointer Events ───
 
   svg.addEventListener("pointerdown", (e) => {
@@ -376,7 +483,8 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
     e.preventDefault();
     const coords = toSvgCoords(e.clientX, e.clientY);
 
-    if (activeTool === "arrow") startArrow(coords);
+    if (activeTool === "move") startMove(e, coords);
+    else if (activeTool === "arrow") startArrow(coords);
     else if (activeTool === "box") startBox(coords);
     else if (activeTool === "text") placeText(coords);
     else if (activeTool === "pin") placePin(coords);
@@ -386,7 +494,8 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
     if (!dragState) return;
     e.preventDefault();
     const coords = toSvgCoords(e.clientX, e.clientY);
-    if (dragState.type === "arrow") moveArrow(coords);
+    if (dragState.type === "move") moveMove(coords);
+    else if (dragState.type === "arrow") moveArrow(coords);
     else if (dragState.type === "box") moveBox(coords);
   });
 
@@ -394,7 +503,8 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
     if (!dragState) return;
     e.preventDefault();
     const coords = toSvgCoords(e.clientX, e.clientY);
-    if (dragState.type === "arrow") endArrow(coords);
+    if (dragState.type === "move") endMove();
+    else if (dragState.type === "arrow") endArrow(coords);
     else if (dragState.type === "box") endBox(coords);
   });
 
@@ -403,6 +513,7 @@ window.createMarkupTools = function createMarkupTools(container, svg, img) {
   function setTool(tool) {
     activeTool = tool;
     svg.classList.toggle("tool-active", !!tool);
+    svg.classList.toggle("tool-move", tool === "move");
     svg.classList.toggle("tool-text", tool === "text");
     svg.classList.toggle("tool-pin", tool === "pin");
   }

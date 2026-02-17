@@ -38,8 +38,19 @@
   background: var(--accent-dim);
 }
 
+.markup-toolbar .markup-tool-btn {
+  position: relative;
+}
+
 .markup-toolbar .markup-tool-btn kbd {
-  display: none;
+  position: absolute;
+  bottom: -1px;
+  right: 0;
+  font: 9px var(--font);
+  line-height: 1;
+  color: var(--text-dim);
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .markup-sep {
@@ -107,6 +118,14 @@
 
 .markup-overlay.tool-pin {
   cursor: copy;
+}
+
+.markup-overlay.tool-move {
+  cursor: grab;
+}
+
+.markup-overlay.tool-move:active {
+  cursor: grabbing;
 }
 
 /* ─── Annotation Visual Styles ─── */

@@ -637,7 +637,7 @@
     if (document.activeElement?.tagName === "INPUT") return;
 
     const key = e.key.toLowerCase();
-    const toolMap = { a: "arrow", b: "box", t: "text", p: "pin" };
+    const toolMap = { m: "move", a: "arrow", b: "box", t: "text", p: "pin" };
     if (toolMap[key]) {
       e.preventDefault();
       const current = markup.getActiveTool();
