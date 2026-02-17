@@ -325,7 +325,12 @@
     descRow.dataset.id = item.id;
     descRow.addEventListener("click", (e) => {
       e.stopPropagation();
-      startEditDescription(descRow, item.id, item.description || "");
+      startEditDescription(
+        descRow,
+        item.id,
+        item.description || "",
+        item.source === "agent",
+      );
     });
     info.appendChild(descRow);
 
@@ -345,12 +350,14 @@
     return div;
   }
 
-  function startEditDescription(descEl, id, currentText) {
+  function startEditDescription(descEl, id, currentText, isAgent) {
     const input = document.createElement("input");
     input.type = "text";
     input.className = "description-edit";
     input.value = currentText;
-    input.placeholder = "Describe this screenshot...";
+    input.placeholder = isAgent
+      ? "Describe this image..."
+      : "Describe this screenshot...";
 
     descEl.textContent = "";
     descEl.appendChild(input);
