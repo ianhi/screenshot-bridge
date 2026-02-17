@@ -2,6 +2,12 @@ export const config = {
   port: Number.parseInt(process.env.PORT || "3456", 10),
   host: process.env.HOST || "0.0.0.0",
   dataDir: process.env.DATA_DIR || "data",
+
+  // Image compression cascade (see image.ts):
+  // 1. Resize to maxImageDimension if larger
+  // 2. JPEG at jpegQualityStart, step down by jpegQualityStep until maxImageBase64KB or jpegQualityMin
+  // 3. If still too large, progressively scale down dimensions
+  // Target 750KB base64 to stay well under MCP's 1MB content limit
   maxImageBase64KB: 750,
   maxImageDimension: 1920,
   jpegQualityStart: 85,

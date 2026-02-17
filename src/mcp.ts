@@ -15,7 +15,6 @@ import {
 import { broadcast } from "./ws.js";
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
-const sessionProjects = new Map<string, string>();
 
 // Each MCP session gets its own McpServer instance because tool handlers
 // close over the session's projectId (captured from ?project= at init time).
@@ -296,16 +295,12 @@ export async function handleMcpRequest(
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (sid) => {
         transports.set(sid, transport);
-        sessionProjects.set(sid, projectId);
       },
     });
 
     transport.onclose = () => {
       const sid = transport.sessionId;
-      if (sid) {
-        transports.delete(sid);
-        sessionProjects.delete(sid);
-      }
+      if (sid) transports.delete(sid);
     };
 
     const server = createServer(projectId);

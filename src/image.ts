@@ -38,7 +38,8 @@ export async function processImage(
     base64 = outputBuffer.toString("base64");
   }
 
-  // If still too large, scale down dimensions progressively
+  // If still too large, scale down dimensions progressively.
+  // Re-creates pipeline from inputBuffer (not reusing `pipeline`) to get exact control over output dimensions.
   if (base64.length > MAX_BASE64_BYTES && metadata.width && metadata.height) {
     let scale = 0.8;
     while (base64.length > MAX_BASE64_BYTES && scale > 0.2) {

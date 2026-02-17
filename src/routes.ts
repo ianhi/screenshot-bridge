@@ -112,7 +112,7 @@ apiRouter.patch("/screenshots/:id", (req, res) => {
   }
 });
 
-// Serve thumbnail for frontend
+// Serve full screenshot image binary (displayed as thumbnail in frontend via CSS constraints)
 apiRouter.get("/screenshots/:id/image", (req, res) => {
   const screenshot = getScreenshot(req.params.id);
   if (!screenshot) {
