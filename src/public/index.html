@@ -124,6 +124,27 @@
         <div class="history-header">
           <h2 class="history-title">History</h2>
           <span class="history-count" id="historyCount"></span>
+          <div class="history-header-actions">
+            <div class="search-bar" id="searchBar">
+              <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M9.5 9.5L13 13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+              <input type="text" class="search-input" id="searchInput" placeholder="Search prompts, descriptions, branches..." autocomplete="off">
+              <div class="search-filters" id="searchFilters">
+                <select class="search-select" id="filterStatus">
+                  <option value="">All status</option>
+                  <option value="pending">Pending</option>
+                  <option value="delivered">Delivered</option>
+                </select>
+              </div>
+              <button class="search-clear" id="searchClear" hidden title="Clear search">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="history-list" id="historyList">
           <div class="history-empty" id="historyEmpty">

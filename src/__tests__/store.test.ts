@@ -184,6 +184,19 @@ describe("store", () => {
       ).toHaveLength(1);
     });
 
+    it("filters by text query", () => {
+      addScreenshot("default", "a", "image/png", "login page bug");
+      addScreenshot("default", "b", "image/png", "dashboard chart");
+      const s3 = addScreenshot("default", "c", "image/png", "other");
+      setDescription(s3.id, "shows the login form");
+
+      expect(filterScreenshots("default", { q: "login" })).toHaveLength(2);
+      expect(filterScreenshots("default", { q: "dashboard" })).toHaveLength(1);
+      expect(filterScreenshots("default", { q: "nonexistent" })).toHaveLength(
+        0,
+      );
+    });
+
     it("filters by commit", () => {
       addScreenshot("default", "a", "image/png", "test");
       expect(

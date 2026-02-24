@@ -30,6 +30,9 @@
   const projectStatus = $id("projectStatus");
   const projectStatusName = $id("projectStatusName");
   const projectStatusSessions = $id("projectStatusSessions");
+  const searchInput = $id("searchInput");
+  const searchClear = $id("searchClear");
+  const filterStatus = $id("filterStatus");
 
   let currentDataUrl = null;
   let markup = null;
@@ -100,6 +103,50 @@
     projectSet.add(name);
     renderTabs();
   }
+
+  // ─── Search ───
+
+  let searchTimer = null;
+
+  function getSearchParams() {
+    const q = searchInput.value.trim();
+    const status = filterStatus.value;
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (status) params.set("status", status);
+    return params;
+  }
+
+  function hasActiveSearch() {
+    return searchInput.value.trim() !== "" || filterStatus.value !== "";
+  }
+
+  function triggerSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      searchClear.hidden = !hasActiveSearch();
+      loadHistory();
+    }, 250);
+  }
+
+  searchInput.addEventListener("input", triggerSearch);
+  filterStatus.addEventListener("change", triggerSearch);
+
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      searchInput.value = "";
+      filterStatus.value = "";
+      searchClear.hidden = true;
+      loadHistory();
+    }
+  });
+
+  searchClear.addEventListener("click", () => {
+    searchInput.value = "";
+    filterStatus.value = "";
+    searchClear.hidden = true;
+    loadHistory();
+  });
 
   // ─── Toast ───
 
@@ -426,7 +473,12 @@
 
   async function loadHistory() {
     try {
-      const res = await fetch(apiUrl("/api/screenshots"));
+      const search = getSearchParams();
+      const searchStr = search.toString();
+      const url = searchStr
+        ? apiUrl(`/api/screenshots?${searchStr}`)
+        : apiUrl("/api/screenshots");
+      const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const items = await res.json();
 

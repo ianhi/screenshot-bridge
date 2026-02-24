@@ -6,6 +6,7 @@ import {
   addScreenshot,
   clearAll,
   deleteScreenshot,
+  filterScreenshots,
   getProjects,
   getScreenshot,
   isNewProject,
@@ -79,7 +80,26 @@ apiRouter.post("/screenshots", async (req, res) => {
 
 apiRouter.get("/screenshots", (req, res) => {
   const projectId = getProject(req);
-  res.json(listScreenshots(projectId));
+  const { branch, commit, since, until, status, q } = req.query as Record<
+    string,
+    string | undefined
+  >;
+
+  const hasFilter = branch || commit || since || until || status || q;
+  if (hasFilter) {
+    res.json(
+      filterScreenshots(projectId, {
+        branch,
+        commit,
+        since,
+        until,
+        status: status as "pending" | "delivered" | undefined,
+        q,
+      }),
+    );
+  } else {
+    res.json(listScreenshots(projectId));
+  }
 });
 
 apiRouter.delete("/screenshots/:id", (req, res) => {

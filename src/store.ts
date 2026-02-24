@@ -216,6 +216,7 @@ export interface FilterOptions {
   since?: string;
   until?: string;
   status?: "pending" | "delivered";
+  q?: string;
 }
 
 export function filterScreenshots(
@@ -245,6 +246,15 @@ export function filterScreenshots(
   }
   if (opts.status) {
     items = items.filter((s) => s.status === opts.status);
+  }
+  if (opts.q) {
+    const lower = opts.q.toLowerCase();
+    items = items.filter(
+      (s) =>
+        s.prompt?.toLowerCase().includes(lower) ||
+        s.description?.toLowerCase().includes(lower) ||
+        s.git?.branch?.toLowerCase().includes(lower),
+    );
   }
 
   return items
