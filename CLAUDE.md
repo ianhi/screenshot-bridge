@@ -17,7 +17,7 @@ Single Node.js process: Express 5 (static + REST API) + MCP (Streamable HTTP on 
 - `src/store.ts` -- in-memory screenshot store with disk persistence (`~/.screenshot-bridge/data/<projectId>/<id>.json`)
 - `src/image.ts` -- sharp resize/compress pipeline (always outputs JPEG to stay under MCP 1MB limit)
 - `src/git.ts` -- captures git branch/commit from the server process's working directory
-- `src/mcp.ts` -- MCP server with 5 tools (one McpServer instance per session, scoped to a project)
+- `src/mcp.ts` -- MCP server with 7 tools (one McpServer instance per session, scoped to a project)
 - `src/routes.ts` -- REST API endpoints
 - `src/ws.ts` -- WebSocket broadcast + request/response (`sendAndWait` for canvas execution); unscoped: all clients receive all events, frontend filters by project
 - `src/index.ts` -- entry point
@@ -68,7 +68,7 @@ All screenshot endpoints accept `?project=<name>` (defaults to `"default"`).
 - `GET /api/health` -- health check
 - `GET /api/projects` -- list known project names
 - `POST /api/screenshots` -- upload (`{ dataUrl, prompt }`)
-- `GET /api/screenshots` -- list screenshots (metadata only)
+- `GET /api/screenshots` -- list screenshots (metadata only); supports `?q=`, `?status=`, `?branch=`, `?commit=`, `?since=`, `?until=` filters and `?limit=`/`?offset=` pagination (returns `{ items, total }` envelope when `limit` is set)
 - `GET /api/screenshots/:id/image` -- serve image binary
 - `PATCH /api/screenshots/:id` -- update description (`{ description }`)
 - `DELETE /api/screenshots/:id` -- delete one screenshot
@@ -94,3 +94,5 @@ All payloads include a `project` field. Events:
 - All screenshots held in memory for fast access; disk JSON (`~/.screenshot-bridge/data/`) is for persistence across restarts
 - Port 3456 by default (configurable via PORT env var)
 - No authentication -- designed as a local development tool
+- Frontend supports light/dark theme toggle (persisted to localStorage, respects prefers-color-scheme)
+- Package supports `npx screenshot-bridge` via `bin` field in package.json

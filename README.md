@@ -11,6 +11,12 @@ Screenshot Bridge solves both directions. It runs a small web server that you op
 ## Quick Start
 
 ```bash
+npx screenshot-bridge
+```
+
+Or from source:
+
+```bash
 git clone https://github.com/ianhi/screenshot-bridge.git
 cd screenshot-bridge
 npm install
@@ -91,6 +97,10 @@ Screenshots are large. A single image can consume a significant portion of Claud
 2. **Use `list_screenshots` first** to check what's available before pulling full image data.
 3. **Write descriptive prompts** when pasting, so Claude has text context before even viewing the image.
 4. **Edit descriptions** in the browser by clicking the description text under any history item.
+
+### Search and Filter
+
+The history panel includes a search bar that filters screenshots by prompt text, descriptions, and branch names. A status dropdown filters by pending/delivered state. Results update as you type (debounced). The backend supports the same filters via query parameters on `GET /api/screenshots`.
 
 ## Multi-Project Support
 
