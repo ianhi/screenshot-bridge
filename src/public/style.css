@@ -808,7 +808,30 @@ body {
 }
 
 .history-actions {
+  display: flex;
+  gap: 2px;
   flex-shrink: 0;
+}
+
+.btn-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+}
+
+.btn-download:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .btn-delete {
@@ -991,6 +1014,29 @@ body {
 
 .lightbox-caption:empty {
   display: none;
+}
+
+.lightbox-download {
+  position: absolute;
+  top: -40px;
+  right: 40px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+}
+
+.lightbox-download:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .lightbox-close {

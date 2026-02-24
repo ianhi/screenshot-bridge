@@ -384,6 +384,22 @@
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   }
 
+  function createDownloadSvg() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", "14");
+    svg.setAttribute("height", "14");
+    svg.setAttribute("viewBox", "0 0 14 14");
+    svg.setAttribute("fill", "none");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M7 2v8M4 7l3 3 3-3M2 11h10");
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", "1.2");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(path);
+    return svg;
+  }
+
   function createDeleteSvg() {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("width", "14");
@@ -496,9 +512,19 @@
 
     div.appendChild(info);
 
-    // Delete button
+    // Action buttons
     const actions = document.createElement("div");
     actions.className = "history-actions";
+
+    const dlBtn = document.createElement("a");
+    dlBtn.className = "btn-download";
+    dlBtn.title = "Download";
+    dlBtn.href = `/api/screenshots/${encodeURIComponent(item.id)}/image`;
+    dlBtn.download = `screenshot-${item.id.slice(0, 8)}.jpg`;
+    dlBtn.addEventListener("click", (e) => e.stopPropagation());
+    dlBtn.appendChild(createDownloadSvg());
+    actions.appendChild(dlBtn);
+
     const delBtn = document.createElement("button");
     delBtn.className = "btn-delete";
     delBtn.title = "Delete";
@@ -813,8 +839,12 @@
   // ─── Lightbox ───
 
   function openLightbox(id, caption) {
-    lightboxImg.src = `/api/screenshots/${encodeURIComponent(id)}/image`;
+    const imgUrl = `/api/screenshots/${encodeURIComponent(id)}/image`;
+    lightboxImg.src = imgUrl;
     lightboxCaption.textContent = caption || "";
+    const dlLink = $id("lightboxDownload");
+    dlLink.href = imgUrl;
+    dlLink.download = `screenshot-${id.slice(0, 8)}.jpg`;
     lightbox.hidden = false;
   }
 
