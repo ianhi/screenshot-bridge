@@ -348,27 +348,19 @@
     const ids = [...selectedIds];
     if (ids.length === 0) return;
 
-    let failed = 0;
-    await Promise.all(
-      ids.map(async (id) => {
-        try {
-          const res = await fetch(
-            `/api/screenshots/${encodeURIComponent(id)}`,
-            { method: "DELETE" },
-          );
-          if (!res.ok) failed++;
-        } catch {
-          failed++;
-        }
-      }),
-    );
-
-    selectedIds.clear();
-    updateBulkBar();
-    if (failed > 0) {
-      toast(`Failed to delete ${failed} screenshot(s)`, "error");
-    } else {
-      toast(`Deleted ${ids.length} screenshot(s)`);
+    try {
+      const res = await fetch("/api/screenshots/batch-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      selectedIds.clear();
+      updateBulkBar();
+      toast(`Deleted ${data.deleted} screenshot(s)`);
+    } catch (err) {
+      toast(`Batch delete failed: ${err.message}`, "error");
     }
   }
 

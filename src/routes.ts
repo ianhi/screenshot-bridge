@@ -134,6 +134,27 @@ apiRouter.delete("/screenshots/:id", (req, res) => {
   }
 });
 
+apiRouter.post("/screenshots/batch-delete", (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ error: "ids array is required" });
+    return;
+  }
+
+  let deleted = 0;
+  for (const id of ids) {
+    const screenshot = getScreenshot(id);
+    if (deleteScreenshot(id)) {
+      broadcast("screenshot:deleted", {
+        id,
+        project: screenshot?.projectId || "default",
+      });
+      deleted++;
+    }
+  }
+  res.json({ deleted });
+});
+
 apiRouter.delete("/screenshots", (req, res) => {
   const projectId = getProject(req);
   const count = clearAll(projectId);
