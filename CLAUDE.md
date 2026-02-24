@@ -72,6 +72,7 @@ All screenshot endpoints accept `?project=<name>` (defaults to `"default"`).
 - `GET /api/screenshots/:id/image` -- serve image binary
 - `PATCH /api/screenshots/:id` -- update description (`{ description }`)
 - `DELETE /api/screenshots/:id` -- delete one screenshot
+- `POST /api/screenshots/batch-delete` -- delete multiple screenshots (`{ ids: [...] }`)
 - `DELETE /api/screenshots` -- clear all screenshots for the project
 
 ## WebSocket Events
@@ -96,3 +97,6 @@ All payloads include a `project` field. Events:
 - No authentication -- designed as a local development tool
 - Frontend supports light/dark theme toggle (persisted to localStorage, respects prefers-color-scheme)
 - Package supports `npx screenshot-bridge` via `bin` field in package.json
+- Frontend keyboard shortcuts: `?` for help overlay, `/` to focus search, `M`/`A`/`B`/`T`/`P` for markup tools
+- History items have checkboxes for batch select/delete and individual download buttons
+- Dockerfile available for containerized deployment
