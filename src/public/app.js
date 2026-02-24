@@ -40,6 +40,11 @@
   let wsReconnectTimer = null;
   let sessionCounts = {};
 
+  const PAGE_SIZE = 50;
+  let historyOffset = 0;
+  let historyTotal = 0;
+  let historyLoading = false;
+
   // ─── Project State ───
 
   let currentProject = "default";
@@ -466,33 +471,64 @@
     });
   }
 
-  function updateHistoryCount(count) {
-    historyCount.textContent = count > 0 ? `${count}` : "";
-    historyEmpty.style.display = count > 0 ? "none" : "block";
+  function updateHistoryCount(total) {
+    historyCount.textContent = total > 0 ? `${total}` : "";
+    historyEmpty.style.display = total > 0 ? "none" : "block";
   }
 
-  async function loadHistory() {
+  async function loadHistory(append = false) {
+    if (historyLoading) return;
+    historyLoading = true;
     try {
+      if (!append) historyOffset = 0;
+
       const search = getSearchParams();
-      const searchStr = search.toString();
-      const url = searchStr
-        ? apiUrl(`/api/screenshots?${searchStr}`)
-        : apiUrl("/api/screenshots");
+      search.set("limit", String(PAGE_SIZE));
+      search.set("offset", String(historyOffset));
+      const url = apiUrl(`/api/screenshots?${search.toString()}`);
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const items = await res.json();
+      const data = await res.json();
 
-      for (const el of historyList.querySelectorAll(".history-item")) {
-        el.remove();
+      const items = data.items;
+      historyTotal = data.total;
+
+      if (!append) {
+        for (const el of historyList.querySelectorAll(".history-item")) {
+          el.remove();
+        }
+        removeLoadMore();
       }
 
       for (const item of items) {
         historyList.appendChild(createHistoryItem(item));
       }
-      updateHistoryCount(items.length);
+
+      historyOffset += items.length;
+      updateHistoryCount(historyTotal);
+      updateLoadMore();
     } catch (err) {
       console.error("Failed to load history:", err);
+    } finally {
+      historyLoading = false;
     }
+  }
+
+  function updateLoadMore() {
+    removeLoadMore();
+    if (historyOffset < historyTotal) {
+      const btn = document.createElement("button");
+      btn.className = "btn-load-more";
+      btn.id = "loadMoreBtn";
+      btn.textContent = `Load more (${historyTotal - historyOffset} remaining)`;
+      btn.addEventListener("click", () => loadHistory(true));
+      historyList.appendChild(btn);
+    }
+  }
+
+  function removeLoadMore() {
+    const existing = $id("loadMoreBtn");
+    if (existing) existing.remove();
   }
 
   // Delete handlers (event delegation)

@@ -175,11 +175,24 @@ export function getScreenshot(id: string): Screenshot | undefined {
 
 export function listScreenshots(
   projectId: string,
+  limit?: number,
+  offset?: number,
 ): Omit<Screenshot, "imageBase64">[] {
-  return [...screenshots.values()]
+  const all = [...screenshots.values()]
     .filter((s) => s.projectId === projectId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map(({ imageBase64: _, ...rest }) => rest);
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const start = offset ?? 0;
+  const sliced = limit ? all.slice(start, start + limit) : all.slice(start);
+  return sliced.map(({ imageBase64: _, ...rest }) => rest);
+}
+
+export function countScreenshots(projectId: string): number {
+  let count = 0;
+  for (const s of screenshots.values()) {
+    if (s.projectId === projectId) count++;
+  }
+  return count;
 }
 
 export function getPending(projectId: string): Screenshot[] {
@@ -222,6 +235,8 @@ export interface FilterOptions {
 export function filterScreenshots(
   projectId: string,
   opts: FilterOptions,
+  limit?: number,
+  offset?: number,
 ): Omit<Screenshot, "imageBase64">[] {
   let items = [...screenshots.values()].filter(
     (s) => s.projectId === projectId,
@@ -257,9 +272,12 @@ export function filterScreenshots(
     );
   }
 
-  return items
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .map(({ imageBase64: _, ...rest }) => rest);
+  const sorted = items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const start = offset ?? 0;
+  const sliced = limit
+    ? sorted.slice(start, start + limit)
+    : sorted.slice(start);
+  return sliced.map(({ imageBase64: _, ...rest }) => rest);
 }
 
 export function deleteScreenshot(id: string): boolean {

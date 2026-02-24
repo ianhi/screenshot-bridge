@@ -5,6 +5,7 @@ import { getSessionCounts } from "./mcp.js";
 import {
   addScreenshot,
   clearAll,
+  countScreenshots,
   deleteScreenshot,
   filterScreenshots,
   getProjects,
@@ -84,21 +85,38 @@ apiRouter.get("/screenshots", (req, res) => {
     string,
     string | undefined
   >;
+  const limit = req.query.limit ? Number(req.query.limit) : undefined;
+  const offset = req.query.offset ? Number(req.query.offset) : undefined;
 
   const hasFilter = branch || commit || since || until || status || q;
+  const filterOpts = {
+    branch,
+    commit,
+    since,
+    until,
+    status: status as "pending" | "delivered" | undefined,
+    q,
+  };
+
+  let items: ReturnType<typeof listScreenshots>;
+  let total: number;
+
   if (hasFilter) {
-    res.json(
-      filterScreenshots(projectId, {
-        branch,
-        commit,
-        since,
-        until,
-        status: status as "pending" | "delivered" | undefined,
-        q,
-      }),
-    );
+    items = filterScreenshots(projectId, filterOpts, limit, offset);
+    total =
+      limit !== undefined
+        ? filterScreenshots(projectId, filterOpts).length
+        : items.length;
   } else {
-    res.json(listScreenshots(projectId));
+    items = listScreenshots(projectId, limit, offset);
+    total = limit !== undefined ? countScreenshots(projectId) : items.length;
+  }
+
+  // Return paginated envelope when limit is specified
+  if (limit !== undefined) {
+    res.json({ items, total });
+  } else {
+    res.json(items);
   }
 });
 

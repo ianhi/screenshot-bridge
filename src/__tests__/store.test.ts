@@ -36,6 +36,7 @@ const {
   markDelivered,
   setDescription,
   filterScreenshots,
+  countScreenshots,
   deleteScreenshot,
   clearAll,
   getProjects,
@@ -119,6 +120,28 @@ describe("store", () => {
 
     it("returns empty array for unknown project", () => {
       expect(listScreenshots("nonexistent")).toEqual([]);
+    });
+
+    it("supports limit and offset for pagination", () => {
+      for (let i = 0; i < 5; i++) {
+        addScreenshot("default", "a", "image/png", `shot${i}`);
+      }
+
+      const page1 = listScreenshots("default", 2);
+      expect(page1).toHaveLength(2);
+
+      const page2 = listScreenshots("default", 2, 2);
+      expect(page2).toHaveLength(2);
+
+      const page3 = listScreenshots("default", 2, 4);
+      expect(page3).toHaveLength(1);
+
+      // No overlap between pages
+      const allIds = [...page1, ...page2, ...page3].map((s) => s.id);
+      expect(new Set(allIds).size).toBe(5);
+
+      // countScreenshots returns total regardless
+      expect(countScreenshots("default")).toBe(5);
     });
   });
 

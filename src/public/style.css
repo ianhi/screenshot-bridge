@@ -831,6 +831,28 @@ body {
   background: var(--red-dim);
 }
 
+/* ─── Load More ─── */
+
+.btn-load-more {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  font: 12px var(--font);
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: center;
+}
+
+.btn-load-more:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
 /* ─── Lightbox ─── */
 
 .lightbox {
