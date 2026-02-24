@@ -841,6 +841,33 @@
     });
   }
 
+  // ─── Theme Toggle ───
+
+  const themeToggle = $id("themeToggle");
+
+  function setTheme(theme) {
+    if (theme === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+    localStorage.setItem("theme", theme);
+  }
+
+  // Initialize from localStorage or system preference
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme) {
+    setTheme(savedTheme);
+  } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+    setTheme("light");
+  }
+
+  themeToggle.addEventListener("click", () => {
+    const isLight =
+      document.documentElement.getAttribute("data-theme") === "light";
+    setTheme(isLight ? "dark" : "light");
+  });
+
   // ─── Init ───
 
   // Mac keyboard hint

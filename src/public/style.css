@@ -14,6 +14,10 @@
   --green-dim: rgba(52, 211, 153, 0.14);
   --red: #f87171;
   --red-dim: rgba(248, 113, 113, 0.12);
+  --blue: #60a5fa;
+  --blue-dim: rgba(96, 165, 250, 0.14);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167, 139, 250, 0.14);
   --radius: 8px;
   --radius-sm: 5px;
   --font: "SF Mono", "Cascadia Code", "Fira Code", "JetBrains Mono",
@@ -21,6 +25,28 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
     sans-serif;
   --transition: 180ms ease;
+}
+
+[data-theme="light"] {
+  --bg: #f5f5f7;
+  --bg-elevated: #ffffff;
+  --bg-surface: #eeeef0;
+  --bg-hover: #e5e5e8;
+  --border: #d4d4d8;
+  --border-focus: #a1a1aa;
+  --text: #1c1c1e;
+  --text-muted: #52525b;
+  --text-dim: #a1a1aa;
+  --accent: #c47f14;
+  --accent-dim: rgba(196, 127, 20, 0.1);
+  --green: #16a34a;
+  --green-dim: rgba(22, 163, 74, 0.1);
+  --red: #dc2626;
+  --red-dim: rgba(220, 38, 38, 0.08);
+  --blue: #2563eb;
+  --blue-dim: rgba(37, 99, 235, 0.1);
+  --purple: #7c3aed;
+  --purple-dim: rgba(124, 58, 237, 0.1);
 }
 
 *,
@@ -96,6 +122,40 @@ body {
 .connection-status.connected .status-dot {
   background: var(--green);
   box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+}
+
+/* ─── Theme Toggle ─── */
+
+.btn-theme {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-theme:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.btn-theme .icon-moon {
+  display: none;
+}
+
+[data-theme="light"] .btn-theme .icon-sun {
+  display: none;
+}
+
+[data-theme="light"] .btn-theme .icon-moon {
+  display: block;
 }
 
 .btn-clear {
@@ -692,13 +752,13 @@ body {
 }
 
 .badge-agent {
-  color: #60a5fa;
-  background: rgba(96, 165, 250, 0.14);
+  color: var(--blue, #60a5fa);
+  background: var(--blue-dim, rgba(96, 165, 250, 0.14));
 }
 
 .badge-git {
-  color: #a78bfa;
-  background: rgba(167, 139, 250, 0.14);
+  color: var(--purple, #a78bfa);
+  background: var(--purple-dim, rgba(167, 139, 250, 0.14));
   font-weight: 500;
   max-width: 120px;
   overflow: hidden;
