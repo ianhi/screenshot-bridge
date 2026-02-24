@@ -831,6 +831,95 @@ body {
   background: var(--red-dim);
 }
 
+/* ─── Bulk Actions ─── */
+
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  animation: slideUp 200ms ease;
+}
+
+.bulk-count {
+  font: 12px var(--font);
+  font-weight: 600;
+  color: var(--accent);
+  margin-right: auto;
+}
+
+.bulk-btn {
+  padding: 4px 10px;
+  font: 11px var(--font);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+}
+
+.bulk-btn:hover {
+  color: var(--text);
+  border-color: var(--border-focus);
+}
+
+.bulk-btn-delete {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-dim);
+}
+
+.bulk-btn-delete:hover {
+  background: var(--red);
+  color: var(--bg);
+}
+
+/* ─── Selection Checkbox ─── */
+
+.select-cb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition);
+  position: relative;
+}
+
+.select-cb:hover {
+  border-color: var(--accent);
+}
+
+.select-cb:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.select-cb:checked::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 4.5px;
+  width: 4px;
+  height: 7px;
+  border: solid var(--bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.history-item.selected {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
 /* ─── Load More ─── */
 
 .btn-load-more {

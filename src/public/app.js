@@ -298,6 +298,80 @@
     }
   });
 
+  // ─── Selection State ───
+
+  const selectedIds = new Set();
+
+  function toggleSelect(id) {
+    if (selectedIds.has(id)) {
+      selectedIds.delete(id);
+    } else {
+      selectedIds.add(id);
+    }
+    updateSelectionUI();
+  }
+
+  function clearSelection() {
+    selectedIds.clear();
+    updateSelectionUI();
+  }
+
+  function selectAll() {
+    for (const el of historyList.querySelectorAll(".history-item")) {
+      if (el.dataset.id) selectedIds.add(el.dataset.id);
+    }
+    updateSelectionUI();
+  }
+
+  function updateSelectionUI() {
+    for (const el of historyList.querySelectorAll(".history-item")) {
+      const id = el.dataset.id;
+      const cb = el.querySelector(".select-cb");
+      if (cb) cb.checked = selectedIds.has(id);
+      el.classList.toggle("selected", selectedIds.has(id));
+    }
+    updateBulkBar();
+  }
+
+  function updateBulkBar() {
+    const bar = $id("bulkBar");
+    const count = selectedIds.size;
+    if (count > 0) {
+      bar.hidden = false;
+      $id("bulkCount").textContent = `${count} selected`;
+    } else {
+      bar.hidden = true;
+    }
+  }
+
+  async function bulkDelete() {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+
+    let failed = 0;
+    await Promise.all(
+      ids.map(async (id) => {
+        try {
+          const res = await fetch(
+            `/api/screenshots/${encodeURIComponent(id)}`,
+            { method: "DELETE" },
+          );
+          if (!res.ok) failed++;
+        } catch {
+          failed++;
+        }
+      }),
+    );
+
+    selectedIds.clear();
+    updateBulkBar();
+    if (failed > 0) {
+      toast(`Failed to delete ${failed} screenshot(s)`, "error");
+    } else {
+      toast(`Deleted ${ids.length} screenshot(s)`);
+    }
+  }
+
   // ─── History ───
 
   function formatTime(iso) {
@@ -333,6 +407,15 @@
     const div = document.createElement("div");
     div.className = "history-item";
     div.dataset.id = item.id;
+
+    // Checkbox
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.className = "select-cb";
+    cb.checked = selectedIds.has(item.id);
+    cb.addEventListener("click", (e) => e.stopPropagation());
+    cb.addEventListener("change", () => toggleSelect(item.id));
+    div.appendChild(cb);
 
     // Thumbnail
     const img = document.createElement("img");
@@ -545,6 +628,10 @@
       toast(`Delete failed: ${err.message}`, "error");
     }
   });
+
+  $id("bulkSelectAll").addEventListener("click", selectAll);
+  $id("bulkDeselect").addEventListener("click", clearSelection);
+  $id("bulkDelete").addEventListener("click", bulkDelete);
 
   clearAllBtn.addEventListener("click", async () => {
     const items = historyList.querySelectorAll(".history-item");
