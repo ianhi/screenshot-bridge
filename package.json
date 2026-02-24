@@ -3,8 +3,14 @@
   "version": "1.0.0",
   "description": "Web-based screenshot bridge with MCP server for Claude Code",
   "type": "module",
+  "bin": {
+    "screenshot-bridge": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/public dist/public",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",

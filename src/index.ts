@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { execFile } from "node:child_process";
 import { createServer } from "node:http";
 import path from "node:path";
