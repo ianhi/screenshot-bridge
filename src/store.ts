@@ -298,3 +298,9 @@ export function clearAll(projectId: string): number {
   }
   return toRemove.length;
 }
+
+/** Reset all in-memory state. For tests only. */
+export function _resetStore(): void {
+  screenshots.clear();
+  knownProjects.clear();
+}
