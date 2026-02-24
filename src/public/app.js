@@ -994,6 +994,40 @@
     });
   }
 
+  // ─── Global Keyboard Shortcuts ───
+
+  const shortcutOverlay = $id("shortcutOverlay");
+
+  function toggleShortcutHelp() {
+    shortcutOverlay.hidden = !shortcutOverlay.hidden;
+  }
+
+  $id("shortcutClose").addEventListener("click", () => {
+    shortcutOverlay.hidden = true;
+  });
+  shortcutOverlay
+    .querySelector(".shortcut-backdrop")
+    .addEventListener("click", () => {
+      shortcutOverlay.hidden = true;
+    });
+
+  document.addEventListener("keydown", (e) => {
+    if (document.activeElement?.tagName === "INPUT") return;
+    if (document.activeElement?.tagName === "TEXTAREA") return;
+
+    if (e.key === "?") {
+      e.preventDefault();
+      toggleShortcutHelp();
+    }
+    if (e.key === "/" && shortcutOverlay.hidden) {
+      e.preventDefault();
+      searchInput.focus();
+    }
+    if (e.key === "Escape" && !shortcutOverlay.hidden) {
+      shortcutOverlay.hidden = true;
+    }
+  });
+
   // ─── Theme Toggle ───
 
   const themeToggle = $id("themeToggle");
